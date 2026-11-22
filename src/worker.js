@@ -47,13 +47,14 @@ export class Game {
   async load() {
     const s = this.state.storage;
     this.meta = (await s.get('meta')) || {
-      settings: { minMult: 1.0, maxMult: 50, edge: 0.05, greed: 0.58, queue: [], startCoins: 20 },
+      settings: { minMult: 1.0, maxMult: 50, edge: 0.05, greed: 0.58, queue: [], startCoins: 0 },
       promoPool: 25,
       history: [],
       crash: null,
       arenas: null,
       withdrawals: []
     };
+    if (this.meta.settings.startCoins === undefined) this.meta.settings.startCoins = 0;
     if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.58;
     if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 25;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
@@ -170,14 +171,17 @@ export class Game {
     let u = this.users[id];
     const isNew = !u;
     if (!u) {
+      const startCoins = r2(Math.max(0, Number(this.meta.settings.startCoins ?? 0)));
       u = this.users[id] = {
-        id, coins: this.meta.settings.startCoins, xp: 0, wagered: 0, won: 0, wins: 0,
+        id, coins: startCoins, xp: 0, wagered: 0, won: 0, wins: 0,
         games: 0, bestMult: 0, lastWheel: 0, lastTag: 0, banned: false, created: Date.now(),
         name: '', username: '', photo: '', txs: [], gameLogs: [],
         refBy: '', refCount: 0, refEarned: 0, streak: 0, bestStreak: 0,
         missions: { dayKey: this.dayKey(), crash2x: 0, arenaPlays: 0, claimedCrash2x: false, claimedArena: false }
       };
-      this.addTx(u, 'deposit', u.coins, 'موجودی اولیه Starsia');
+      if (startCoins > 0) {
+        this.addTx(u, 'deposit', startCoins, 'موجودی اولیه Starsia');
+      }
       this.touch(u);
     }
     this.ensureMissions(u);

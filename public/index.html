@@ -707,7 +707,7 @@ function renderMissionsAndStreak(u) {
 
   const ab = $('mArenaBtn');
   if (m.claimedArena) { ab.textContent = 'دریافت شده ✅'; ab.disabled = true; ab.className = 'ghost'; }
-  else if (aProg >= 2) { ab.textContent = 'دریافت 1.5 ⭐'; ab.disabled = false; ab.className = 'g'; }
+  else if (aProg >= 2) { ab.textContent = 'دریافت 1.5 ⭐'; ab.disabled = false; cb.className = 'g'; }
   else { ab.textContent = `${aProg}/2`; ab.disabled = true; ab.className = 'ghost'; }
 }
 async function claimMission(mission) {
