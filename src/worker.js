@@ -1,19 +1,29 @@
-// Starsia on Cloudflare Workers + Durable Object (free plan).
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
-const LEVELS = [0, 50, 150, 400, 900, 1800, 3500, 7000, 14000, 30000];
-const ARENA_TIERS = [10, 50, 200], FEE = 0.05, ARENA_WAIT = 20000;
-const WHEEL = [{ v: 1, w: 36 }, { v: 2, w: 38 }, { v: 4, w: 17 }, { v: 8, w: 6 }, { v: 10, w: 3 }];
+const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
+const ARENA_TIERS = [0.1, 0.5, 2], FEE = 0.05, ARENA_WAIT = 20000;
+
+// Wheel probabilities: 0.01 TON -> 99%, 0.1 TON -> 1%, 0.02 TON -> shown on wheel (0% random draw)
+const WHEEL = [
+  { v: 0.01, w: 99 },
+  { v: 0.1, w: 1 },
+  { v: 0.02, w: 0 }
+];
+
 const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.15, SHIELD_REFUND = 0.50;
-const STREAK_MILESTONE = 3, STREAK_REWARD = 1.5;
+const STREAK_MILESTONE = 3, STREAK_REWARD = 0.015;
 
 // Tonkeeper Deposit Config (Verified On-Chain)
 const TON_DEPOSIT_ADDR = 'EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu';
 const TON_DEPOSIT_MEMO = '398101056984149';
-const STARS_PER_TON = 100; // 1 TON = 100 Stars (0.01 TON = 1 Star)
 
 const levelOf = xp => { let l = 0; LEVELS.forEach((t, i) => { if (xp >= t) l = i + 1; }); return l; };
-const r2 = n => Math.round(n * 100) / 100;
+const r4 = n => Math.round(Number(n || 0) * 10000) / 10000;
+const fmtTon = n => {
+  const v = r4(n);
+  return Number(v.toFixed(4)).toString();
+};
 const JSONH = { 'content-type': 'application/json' };
 const json = (code, obj) => new Response(JSON.stringify(obj), { status: code, headers: JSONH });
 
@@ -33,26 +43,23 @@ async function validateInitData(init, token) {
   try { return JSON.parse(p.get('user')); } catch { return null; }
 }
 
-// Build standard TON cell BOC (base64) with 32-bit zero op-code + UTF-8 text comment
 function textCommentToBocBase64(text) {
   const bytes = new TextEncoder().encode(String(text || ''));
   const dataLen = 4 + bytes.length;
   if (dataLen > 127) throw new Error('Comment too long');
   const cellBytes = new Uint8Array(2 + dataLen);
-  cellBytes[0] = 0x00; // refs=0, exotic=0
-  cellBytes[1] = dataLen * 2; // byte-aligned bits descriptor
-  // 4 zero bytes op=0x00000000 already 0
+  cellBytes[0] = 0x00;
+  cellBytes[1] = dataLen * 2;
   cellBytes.set(bytes, 6);
 
-  // Standard serialized BOC (magic b5ee9c72, flags=0, size=1, off_bytes=1, cells=1, roots=1, absent=0, tot_cells_size, root_idx=0)
   const boc = new Uint8Array(10 + cellBytes.length);
   boc[0] = 0xb5; boc[1] = 0xee; boc[2] = 0x9c; boc[3] = 0x72;
-  boc[4] = 0x01; // has_idx=0, has_crc32c=0, has_cache_bits=0, flags=0, size=1
-  boc[5] = 0x01; // off_bytes=1
-  boc[6] = 0x01; // cells=1
-  boc[7] = 0x01; // roots=1
-  boc[8] = 0x00; // absent=0
-  boc[9] = cellBytes.length; // tot_cells_size
+  boc[4] = 0x01;
+  boc[5] = 0x01;
+  boc[6] = 0x01;
+  boc[7] = 0x01;
+  boc[8] = 0x00;
+  boc[9] = cellBytes.length;
   boc.set(cellBytes, 10);
 
   let bin = '';
@@ -67,7 +74,7 @@ export default {
     if (url.pathname === '/tonconnect-manifest.json') {
       return new Response(JSON.stringify({
         url: url.origin,
-        name: 'Starsia',
+        name: 'Tonia',
         iconUrl: 'https://ton.org/download/ton_symbol.png'
       }), { headers: { ...JSONH, 'access-control-allow-origin': '*' } });
     }
@@ -86,8 +93,8 @@ export class Game {
   async load() {
     const s = this.state.storage;
     this.meta = (await s.get('meta')) || {
-      settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0, starsPerTon: STARS_PER_TON },
-      promoPool: 25,
+      settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0 },
+      promoPool: 0.25,
       history: [],
       crash: null,
       arenas: null,
@@ -96,11 +103,8 @@ export class Game {
       tonOrders: []
     };
     this.meta.settings.startCoins = 0;
-    if (!this.meta.settings.starsPerTon || this.meta.settings.starsPerTon < 1) {
-      this.meta.settings.starsPerTon = STARS_PER_TON;
-    }
     if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.42;
-    if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 25;
+    if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 0.25;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
     if (!Array.isArray(this.meta.usedTonTxs)) this.meta.usedTonTxs = [];
     if (!Array.isArray(this.meta.tonOrders)) this.meta.tonOrders = [];
@@ -151,21 +155,21 @@ export class Game {
     }
   }
   fundPromoPool(amount) {
-    const add = r2(Math.max(0, amount));
+    const add = r4(Math.max(0, amount));
     if (add > 0) {
-      this.meta.promoPool = r2((this.meta.promoPool || 0) + add);
+      this.meta.promoPool = r4((this.meta.promoPool || 0) + add);
       this.saveMeta();
     }
   }
   payoutFromPool(u, requestedAmount, note) {
-    const want = r2(Math.max(0, requestedAmount));
+    const want = r4(Math.max(0, requestedAmount));
     if (want <= 0) return 0;
-    const available = r2(Math.max(0, this.meta.promoPool || 0));
-    const granted = r2(Math.min(want, available));
+    const available = r4(Math.max(0, this.meta.promoPool || 0));
+    const granted = r4(Math.min(want, available));
     if (granted <= 0) return 0;
-    this.meta.promoPool = r2(available - granted);
-    u.coins = r2(u.coins + granted);
-    u.won = r2(u.won + granted);
+    this.meta.promoPool = r4(available - granted);
+    u.coins = r4(u.coins + granted);
+    u.won = r4(u.won + granted);
     this.addTx(u, 'deposit', granted, note + (granted < want ? ' (سهمیه بودجه بونوس)' : ''));
     this.touch(u);
     this.saveMeta();
@@ -176,7 +180,7 @@ export class Game {
     if (!Array.isArray(u.txs)) u.txs = [];
     u.txs.unshift({
       id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      type, amount: r2(amount), note, status, at: Date.now()
+      type, amount: r4(amount), note, status, at: Date.now()
     });
     u.txs = u.txs.slice(0, 60);
     this.touch(u);
@@ -185,7 +189,7 @@ export class Game {
     if (!Array.isArray(u.gameLogs)) u.gameLogs = [];
     u.gameLogs.unshift({
       id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      game, detail, delta: r2(delta), at: Date.now()
+      game, detail, delta: r4(delta), at: Date.now()
     });
     u.gameLogs = u.gameLogs.slice(0, 60);
     this.touch(u);
@@ -194,10 +198,10 @@ export class Game {
     if (!user || !user.refBy) return;
     const inviter = this.users[user.refBy];
     if (!inviter || inviter.id === user.id) return;
-    const bonus = r2(baseAmount * pct);
+    const bonus = r4(baseAmount * pct);
     if (bonus <= 0) return;
-    inviter.coins = r2(inviter.coins + bonus);
-    inviter.refEarned = r2((inviter.refEarned || 0) + bonus);
+    inviter.coins = r4(inviter.coins + bonus);
+    inviter.refEarned = r4((inviter.refEarned || 0) + bonus);
     this.addTx(inviter, 'deposit', bonus, `${reason} (${user.name})`);
     this.touch(inviter);
   }
@@ -212,7 +216,6 @@ export class Game {
     return null;
   }
 
-  // Verify incoming TON transaction on-chain via Toncenter API
   async verifyIncomingTonTx(order) {
     const headers = { accept: 'application/json' };
     if (this.env.TONCENTER_API_KEY) headers['X-API-Key'] = this.env.TONCENTER_API_KEY;
@@ -224,10 +227,9 @@ export class Game {
       return { ok: false, reason: 'پاسخ نامعتبر از شبکه TON' };
     }
 
-    const minNano = BigInt(Math.floor(Number(order.tonAmount) * 1e9 * 0.985)); // 1.5% tolerance for minor rounding
+    const minNano = BigInt(Math.floor(Number(order.tonAmount) * 1e9 * 0.985));
     const minUtime = Math.floor((order.created - 120000) / 1000);
-    const expectedExactMemo = order.fullMemo;
-    const baseMemo = TON_DEPOSIT_MEMO;
+    const expectedMemo = TON_DEPOSIT_MEMO;
 
     for (const tx of data.result) {
       const txHash = tx?.transaction_id?.hash;
@@ -241,14 +243,14 @@ export class Game {
       if (valNano < minNano) continue;
 
       const msgText = String(inMsg.message || '').trim();
-      const matchedExact = msgText === expectedExactMemo;
-      const matchedBaseAndSender = msgText === baseMemo && order.senderAddress && inMsg.source && String(inMsg.source).includes(order.senderAddress.slice(2, 20));
-      if (!matchedExact && !matchedBaseAndSender) continue;
+      const matchedMemo = msgText === expectedMemo;
+      const matchedSender = order.senderAddress && inMsg.source && String(inMsg.source).includes(order.senderAddress.slice(2, 20));
+      if (!matchedMemo && !matchedSender) continue;
 
       return {
         ok: true,
         txHash,
-        tonPaid: Number(valNano) / 1e9,
+        tonPaid: r4(Number(valNano) / 1e9),
         sender: inMsg.source || order.senderAddress || ''
       };
     }
@@ -291,31 +293,29 @@ export class Game {
   pub(u) {
     this.ensureMissions(u);
     const rawBot = String(this.env.BOT_USERNAME || '').trim().replace(/^@+/, '');
-    const rate = Number(this.meta.settings.starsPerTon || STARS_PER_TON);
     return {
       id: u.id, name: u.name, username: u.username, photo: u.photo,
-      coins: r2(u.coins), xp: u.xp, level: levelOf(u.xp),
-      wagered: r2(u.wagered), won: r2(u.won), wins: u.wins, games: u.games, bestMult: u.bestMult,
+      coins: r4(u.coins), xp: u.xp, level: levelOf(u.xp),
+      wagered: r4(u.wagered), won: r4(u.won), wins: u.wins, games: u.games, bestMult: u.bestMult,
       streak: u.streak || 0, bestStreak: u.bestStreak || 0,
       missions: u.missions,
-      promoPool: r2(this.meta.promoPool || 0),
+      promoPool: r4(this.meta.promoPool || 0),
       wheelIn: Math.max(0, u.lastWheel + DAY - Date.now()),
       tagIn: Math.max(0, u.lastTag + DAY - Date.now()),
       isAdmin: u.id === String(this.env.ADMIN_ID),
       botUsername: rawBot,
       tonDeposit: {
         address: TON_DEPOSIT_ADDR,
-        memo: TON_DEPOSIT_MEMO,
-        starsPerTon: rate
+        memo: TON_DEPOSIT_MEMO
       },
       refCount: u.refCount || 0,
-      refEarned: r2(u.refEarned || 0),
+      refEarned: r4(u.refEarned || 0),
       txs: (u.txs || []).slice(0, 30),
       gameLogs: (u.gameLogs || []).slice(0, 30),
       withdrawals: this.meta.withdrawals.filter(w => w.uid === u.id).slice(0, 20)
     };
   }
-  addXp(u, a) { u.xp += Math.max(1, Math.floor(a)); }
+  addXp(u, a) { u.xp += Math.max(1, Math.floor(Number(a || 1) * 20)); }
   async tg(method, body) {
     if (!this.env.BOT_TOKEN) return null;
     try {
@@ -347,7 +347,7 @@ export class Game {
     const maxCap = Math.min(Number(s.maxMult) || 25, 25);
     const minFloor = Math.max(1.0, Number(s.minMult) || 1.0);
     m = Math.min(Math.max(m * (1 - edge * 0.25), minFloor), maxCap);
-    return Math.max(1.0, r2(m));
+    return Math.max(1.0, Math.round(m * 100) / 100);
   }
 
   recordWinStreak(u) {
@@ -356,7 +356,7 @@ export class Game {
     if (u.streak > 0 && u.streak % STREAK_MILESTONE === 0) {
       const reward = this.payoutFromPool(u, STREAK_REWARD, `جایزه برد متوالی (${u.streak} برد پیاپی)`);
       if (reward > 0) {
-        this.addXp(u, 8);
+        this.addXp(u, 0.4);
         this.addGameLog(u, 'streak', `زنجیره ${u.streak} برد متوالی`, reward);
       }
     }
@@ -370,12 +370,12 @@ export class Game {
   }
 
   settleCrashSlot(u, slot, mult, slotLabel) {
-    slot.cashed = r2(mult);
-    const win = r2(slot.amount * mult);
+    slot.cashed = Math.round(mult * 100) / 100;
+    const win = r4(slot.amount * slot.cashed);
     slot.winAmount = win;
-    const profit = r2(win - slot.amount);
-    u.coins = r2(u.coins + win);
-    u.won = r2(u.won + win);
+    const profit = r4(win - slot.amount);
+    u.coins = r4(u.coins + win);
+    u.won = r4(u.won + win);
     u.wins += 1;
     u.bestMult = Math.max(u.bestMult, slot.cashed);
     this.ensureMissions(u);
@@ -383,24 +383,24 @@ export class Game {
       u.missions.crash2x += 1;
     }
     this.recordWinStreak(u);
-    this.addXp(u, slot.amount * 0.45 + 2);
-    this.addGameLog(u, 'crash', `برد ${slotLabel} در ضریب ${slot.cashed}x (شرط ${slot.amount})`, profit);
+    this.addXp(u, slot.amount * 2 + 0.1);
+    this.addGameLog(u, 'crash', `برد ${slotLabel} در ضریب ${slot.cashed}x (شرط ${fmtTon(slot.amount)} TON)`, profit);
     this.addTx(u, 'deposit', win, `برد کرش (${slotLabel}) در ضریب ${slot.cashed}x`);
     this.touch(u);
   }
 
   settleCrashLossSlot(u, slot, crashAt, slotLabel) {
     slot.lost = true;
-    const shieldFee = r2(slot.shieldFee || 0);
+    const shieldFee = r4(slot.shieldFee || 0);
     let refund = 0;
     if (slot.shield && crashAt < SHIELD_MAX_MULT) {
-      refund = r2(slot.amount * SHIELD_REFUND);
-      u.coins = r2(u.coins + refund);
+      refund = r4(slot.amount * SHIELD_REFUND);
+      u.coins = r4(u.coins + refund);
       this.addTx(u, 'deposit', refund, `بازگشت ۵۰٪ شرط با سپر ضد انفجار (انفجار در ${crashAt}x)`);
     }
     this.resetStreak(u);
-    const netDelta = r2(-(slot.amount + shieldFee) + refund);
-    this.addGameLog(u, 'crash', `انفجار در ${crashAt}x (${slotLabel}, شرط ${slot.amount}${slot.shield ? ' + سپر' : ''})`, netDelta);
+    const netDelta = r4(-(slot.amount + shieldFee) + refund);
+    this.addGameLog(u, 'crash', `انفجار در ${crashAt}x (${slotLabel}, شرط ${fmtTon(slot.amount)} TON${slot.shield ? ' + سپر' : ''})`, netDelta);
     this.touch(u);
   }
 
@@ -471,31 +471,31 @@ export class Game {
         this.saveMeta();
       }
       if (a.endAt && now >= a.endAt) {
-        const totalPool = r2(a.entry * a.players.length);
-        const houseCut = r2(totalPool * FEE);
+        const totalPool = r4(a.entry * a.players.length);
+        const houseCut = r4(totalPool * FEE);
         this.fundPromoPool(houseCut * 0.25);
-        const prize = r2(totalPool * (1 - FEE));
+        const prize = r4(totalPool * (1 - FEE));
         const winIdx = Math.floor(Math.random() * a.players.length);
         const w = a.players[winIdx];
         const wu = this.users[w.id];
         if (wu) {
-          wu.coins = r2(wu.coins + prize);
-          wu.won = r2(wu.won + prize);
+          wu.coins = r4(wu.coins + prize);
+          wu.won = r4(wu.won + prize);
           wu.wins++;
           this.recordWinStreak(wu);
-          this.addXp(wu, a.entry);
-          this.addGameLog(wu, 'arena', `برنده آرنا ${a.entry} (${a.players.length} نفر)`, r2(prize - a.entry));
-          this.addTx(wu, 'deposit', prize, `جایزه آرنا ${a.entry} استارز`);
+          this.addXp(wu, a.entry * 5);
+          this.addGameLog(wu, 'arena', `برنده آرنا ${fmtTon(a.entry)} TON (${a.players.length} نفر)`, r4(prize - a.entry));
+          this.addTx(wu, 'deposit', prize, `جایزه آرنا ${fmtTon(a.entry)} TON`);
           this.touch(wu);
         }
         a.players.forEach(p => {
           const pu = this.users[p.id];
           if (!pu) return;
           pu.games++;
-          this.addXp(pu, a.entry * 0.3);
+          this.addXp(pu, a.entry * 2);
           if (p.id !== w.id) {
             this.resetStreak(pu);
-            this.addGameLog(pu, 'arena', `باخت در آرنا ${a.entry} (برنده: ${w.name})`, -a.entry);
+            this.addGameLog(pu, 'arena', `باخت در آرنا ${fmtTon(a.entry)} TON (برنده: ${w.name})`, -a.entry);
           }
           this.touch(pu);
         });
@@ -525,50 +525,17 @@ export class Game {
     if (url.pathname !== '/setup/' + this.env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
     const r1 = await this.tg('setWebhook', {
       url: `${url.origin}/tg/${this.env.WEBHOOK_SECRET}`,
-      allowed_updates: ['message', 'pre_checkout_query']
+      allowed_updates: ['message']
     });
     const r2_ = await this.tg('setChatMenuButton', {
-      menu_button: { type: 'web_app', text: '⭐ Starsia', web_app: { url: url.origin } }
+      menu_button: { type: 'web_app', text: '💎 Tonia', web_app: { url: url.origin } }
     });
     return new Response(`webhook: ${JSON.stringify(r1)}\nmenu: ${JSON.stringify(r2_)}\nURL: ${url.origin}`);
   }
   async webhook(req, url) {
     if (url.pathname !== '/tg/' + this.env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
     const up = await req.json().catch(() => ({}));
-
-    if (up.pre_checkout_query) {
-      await this.tg('answerPreCheckoutQuery', {
-        pre_checkout_query_id: up.pre_checkout_query.id,
-        ok: true
-      });
-      return new Response('ok');
-    }
-
     const m = up.message;
-    if (m && m.successful_payment) {
-      const sp = m.successful_payment;
-      const uid = String(m.from.id);
-      const stars = Number(sp.total_amount || 0);
-      if (stars >= 5) {
-        const u = this.getUser(m.from);
-        u.coins = r2(u.coins + stars);
-        this.addTx(u, 'deposit', stars, `شارژ مستقیم با استارز (${stars} ⭐)`);
-        this.rewardReferrer(u, stars, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
-        this.touch(u);
-        await this.tg('sendMessage', {
-          chat_id: uid,
-          text: `✅ پرداخت ${stars} استارز با موفقیت انجام شد!\nموجودی جدید شما در Starsia: ${u.coins} ⭐`
-        });
-        if (this.env.ADMIN_ID) {
-          await this.tg('sendMessage', {
-            chat_id: String(this.env.ADMIN_ID),
-            text: `⭐ واریز جدید استارز:\nکاربر: ${u.name} (${u.id})\nمقدار: ${stars} استارز`
-          });
-        }
-      }
-      await this.flush();
-      return new Response('ok');
-    }
 
     if (m && m.text) {
       const id = String(m.from.id), [cmd, ...a] = m.text.split(/\s+/), origin = url.origin;
@@ -580,21 +547,21 @@ export class Game {
         const appUrl = startParam ? `${origin}/?ref=${encodeURIComponent(startParam)}` : origin;
         await this.tg('sendMessage', {
           chat_id: id,
-          text: '⭐ به Starsia خوش آمدید!\nبرای ورود به بازی، دعوت دوستان و شارژ استارز روی دکمه زیر بزنید:\n\n💬 برای ارسال پیام به پشتیبانی، کافیست همین‌جا در ربات پیام خود را بنویسید تا مستقیم برای ادمین ارسال شود.',
-          reply_markup: { inline_keyboard: [[{ text: '🚀 ورود به Starsia', web_app: { url: appUrl } }]] }
+          text: '💎 به Tonia خوش آمدید!\nبرای ورود به بازی، دعوت دوستان و واریز TON روی دکمه زیر بزنید:\n\n💬 برای ارسال پیام به پشتیبانی، کافیست همین‌جا در ربات پیام خود را بنویسید تا مستقیم برای ادمین ارسال شود.',
+          reply_markup: { inline_keyboard: [[{ text: '🚀 ورود به Tonia', web_app: { url: appUrl } }]] }
         });
       } else if (isAdminMsg) {
         if (cmd === '/give' || cmd === '/take') {
           const t = this.findUserByQuery(a[0]), n = Number(a[1]);
-          if (t && n > 0) {
-            const delta = cmd === '/give' ? n : -n;
-            t.coins = Math.max(0, r2(t.coins + delta));
-            this.addTx(t, delta >= 0 ? 'admin_add' : 'admin_sub', delta, 'تغییر موجودی توسط ادمین (بات)');
+          if (t && isFinite(n) && n > 0) {
+            const delta = cmd === '/give' ? r4(n) : r4(-n);
+            t.coins = Math.max(0, r4(t.coins + delta));
+            this.addTx(t, delta >= 0 ? 'admin_add' : 'admin_sub', delta, 'تغییر موجودی TON توسط ادمین (بات)');
             this.touch(t);
-            await this.tg('sendMessage', { chat_id: id, text: `${t.name}: ${t.coins} ⭐` });
+            await this.tg('sendMessage', { chat_id: id, text: `${t.name}: ${fmtTon(t.coins)} TON` });
           }
         } else if (cmd === '/next') {
-          this.meta.settings.queue.push(...a.map(Number).filter(n => n >= 1).map(r2));
+          this.meta.settings.queue.push(...a.map(Number).filter(n => n >= 1).map(n => Math.round(n * 100) / 100));
           this.saveMeta();
           await this.tg('sendMessage', { chat_id: id, text: 'صف: ' + this.meta.settings.queue.join(', ') });
         } else if (cmd === '/clearnext') {
@@ -607,7 +574,7 @@ export class Game {
           if (targetId && replyText) {
             await this.tg('sendMessage', {
               chat_id: targetId,
-              text: `💬 پاسخ پشتیبانی Starsia:\n${replyText}`
+              text: `💬 پاسخ پشتیبانی Tonia:\n${replyText}`
             });
             await this.tg('sendMessage', { chat_id: id, text: `✅ پاسخ برای کاربر ${targetId} ارسال شد.` });
           } else {
@@ -619,7 +586,7 @@ export class Game {
           if (match && match[1]) {
             await this.tg('sendMessage', {
               chat_id: match[1],
-              text: `💬 پاسخ پشتیبانی Starsia:\n${m.text}`
+              text: `💬 پاسخ پشتیبانی Tonia:\n${m.text}`
             });
             await this.tg('sendMessage', { chat_id: id, text: `✅ پاسخ برای کاربر ${match[1]} ارسال شد.` });
           }
@@ -630,7 +597,7 @@ export class Game {
           const unameStr = u.username ? `@${u.username}` : 'ندارد';
           await this.tg('sendMessage', {
             chat_id: String(this.env.ADMIN_ID),
-            text: `📩 پیام جدید پشتیبانی:\nنام: ${u.name}\nیوزرنیم: ${unameStr}\nآیدی: ${u.id}\nموجودی: ${u.coins} ⭐\n\nمتن پیام:\n${m.text}\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`
+            text: `📩 پیام جدید پشتیبانی:\nنام: ${u.name}\nیوزرنیم: ${unameStr}\nآیدی: ${u.id}\nموجودی: ${fmtTon(u.coins)} TON\n\nمتن پیام:\n${m.text}\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`
           });
         }
         await this.tg('sendMessage', {
@@ -679,7 +646,7 @@ export class Game {
               name: `${pName} #1${entry.a.shield ? ' 🛡️' : ''}`,
               amount: entry.a.amount,
               cashed: entry.a.cashed || null,
-              wonAmount: entry.a.cashed ? r2(entry.a.winAmount ?? entry.a.amount * entry.a.cashed) : null
+              wonAmount: entry.a.cashed ? r4(entry.a.winAmount ?? entry.a.amount * entry.a.cashed) : null
             });
           }
           if (entry.b) {
@@ -687,7 +654,7 @@ export class Game {
               name: `${pName} #2${entry.b.shield ? ' 🛡️' : ''}`,
               amount: entry.b.amount,
               cashed: entry.b.cashed || null,
-              wonAmount: entry.b.cashed ? r2(entry.b.winAmount ?? entry.b.amount * entry.b.cashed) : null
+              wonAmount: entry.b.cashed ? r4(entry.b.winAmount ?? entry.b.amount * entry.b.cashed) : null
             });
           }
         }
@@ -695,7 +662,7 @@ export class Game {
           user: this.pub(u),
           crash: {
             phase: c.phase, id: c.id, betLeft: Math.max(0, c.betEnd - now),
-            mult: c.phase === 'run' ? r2(this.crashMult(now)) : (c.phase === 'crashed' ? c.crashAt : 1),
+            mult: c.phase === 'run' ? (Math.round(this.crashMult(now) * 100) / 100) : (c.phase === 'crashed' ? c.crashAt : 1),
             crashAt: c.phase === 'crashed' ? c.crashAt : null,
             runningMs: c.phase === 'run' ? now - c.startAt : 0,
             growth: GROWTH,
@@ -717,30 +684,30 @@ export class Game {
 
       case 'POST /api/crash/bet': {
         const slotKey = body.slot === 'b' ? 'b' : 'a';
-        const amt = Math.floor(Number(body.amount));
+        const amt = r4(body.amount);
         const useShield = !!body.shield;
         if (c.phase !== 'bet') return bad('ثبت شرط بسته است');
-        if (!(amt >= 1 && amt <= 100000)) return bad('مبلغ شرط نامعتبر است');
-        const shieldFee = useShield ? r2(amt * SHIELD_RATE) : 0;
-        const totalCost = r2(amt + shieldFee);
-        if (totalCost > u.coins) return bad('موجودی استارز برای شرط و سپر کافی نیست');
+        if (!(isFinite(amt) && amt >= 0.005 && amt <= 1000)) return bad('حداقل مبلغ شرط 0.005 TON است');
+        const shieldFee = useShield ? r4(amt * SHIELD_RATE) : 0;
+        const totalCost = r4(amt + shieldFee);
+        if (totalCost > r4(u.coins + 1e-9)) return bad('موجودی TON برای شرط و سپر کافی نیست');
 
         const entry = c.bets[u.id] || { a: null, b: null };
         if (entry[slotKey]) return bad('این پنل شرط در این دور قبلاً ثبت شده است');
 
-        u.coins = r2(u.coins - totalCost);
-        u.wagered = r2(u.wagered + amt);
+        u.coins = Math.max(0, r4(u.coins - totalCost));
+        u.wagered = r4(u.wagered + amt);
         u.games++;
         if (shieldFee > 0) this.fundPromoPool(shieldFee * 0.45);
-        this.addXp(u, amt * 0.2 + 1);
-        this.addTx(u, 'admin_sub', -totalCost, `شرط ${slotKey === 'a' ? '۱' : '۲'} کرش دور #${c.id}${useShield ? ` (+سپر ${shieldFee} ⭐)` : ''}`);
+        this.addXp(u, amt * 2 + 0.1);
+        this.addTx(u, 'admin_sub', -totalCost, `شرط ${slotKey === 'a' ? '۱' : '۲'} کرش دور #${c.id}${useShield ? ` (+سپر ${fmtTon(shieldFee)} TON)` : ''}`);
         this.rewardReferrer(u, amt, 0.005, 'پاداش ۰.۵٪ بازی کرش زیرمجموعه');
 
         entry[slotKey] = {
           amount: amt,
           shield: useShield,
           shieldFee,
-          auto: Number(body.auto) > 1 ? r2(Number(body.auto)) : 0,
+          auto: Number(body.auto) > 1 ? (Math.round(Number(body.auto) * 100) / 100) : 0,
           winAmount: 0
         };
         c.bets[u.id] = entry;
@@ -767,8 +734,8 @@ export class Game {
         if (mid === 'crash2x') {
           if (u.missions.claimedCrash2x) return bad('قبلاً دریافت شده است');
           if (u.missions.crash2x < 3) return bad('هنوز ماموریت ۳ برد بالای ۲x کامل نشده');
-          const paid = this.payoutFromPool(u, 1.5, 'جایزه ماموریت روزانه: ۳ برد بالای 2x در کرش');
-          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده؛ فردا یا بعد از بازی‌های بیشتر تلاش کنید');
+          const paid = this.payoutFromPool(u, 0.015, 'جایزه ماموریت روزانه: ۳ برد بالای 2x در کرش');
+          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده است');
           u.missions.claimedCrash2x = true;
           this.touch(u);
           return json(200, { ok: true, reward: paid });
@@ -776,8 +743,8 @@ export class Game {
         if (mid === 'arena') {
           if (u.missions.claimedArena) return bad('قبلاً دریافت شده است');
           if (u.missions.arenaPlays < 2) return bad('هنوز ۲ دور آرنا بازی نکرده‌اید');
-          const paid = this.payoutFromPool(u, 1.5, 'جایزه ماموریت روزانه: ۲ شرکت در آرنا');
-          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده؛ فردا یا بعد از بازی‌های بیشتر تلاش کنید');
+          const paid = this.payoutFromPool(u, 0.015, 'جایزه ماموریت روزانه: ۲ شرکت در آرنا');
+          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده است');
           u.missions.claimedArena = true;
           this.touch(u);
           return json(200, { ok: true, reward: paid });
@@ -790,50 +757,30 @@ export class Game {
         if (!a) return bad('نامعتبر');
         if (a.players.some(p => p.id === u.id)) return bad('قبلاً وارد شده‌اید');
         if (a.endAt && a.endAt - now < 1200) return bad('دور در حال پایان است');
-        if (u.coins < a.entry) return bad('موجودی استارز کافی نیست');
+        if (r4(u.coins) < a.entry) return bad('موجودی TON کافی نیست');
         this.ensureMissions(u);
-        u.coins = r2(u.coins - a.entry);
-        u.wagered = r2(u.wagered + a.entry);
+        u.coins = Math.max(0, r4(u.coins - a.entry));
+        u.wagered = r4(u.wagered + a.entry);
         if (u.missions.arenaPlays < 2) u.missions.arenaPlays += 1;
         a.players.push({ id: u.id, name: u.name });
-        this.addTx(u, 'admin_sub', -a.entry, `ورودی آرنا ${a.entry} استارز`);
+        this.addTx(u, 'admin_sub', -a.entry, `ورودی آرنا ${fmtTon(a.entry)} TON`);
         this.rewardReferrer(u, a.entry, 0.005, 'پاداش ۰.۵٪ بازی آرنا زیرمجموعه');
         this.touch(u);
         this.saveMeta();
         return json(200, { ok: true });
       }
 
-      case 'POST /api/stars/invoice': {
-        const stars = Math.floor(Number(body.stars));
-        if (!stars || stars < 5 || stars > 50000) return bad('حداقل واریز استارز ۵ عدد است');
-        if (!this.env.BOT_TOKEN) return bad('توکن بات تنظیم نشده است');
-        const link = await this.tg('createInvoiceLink', {
-          title: `شارژ ${stars} استارز در Starsia`,
-          description: `افزایش ${stars} استارز به حساب کاربری ${u.name}`,
-          payload: JSON.stringify({ uid: u.id, stars }),
-          provider_token: '',
-          currency: 'XTR',
-          prices: [{ label: `${stars} Stars`, amount: stars }]
-        });
-        if (!link) return bad('خطا در ساخت فاکتور استارز');
-        return json(200, { ok: true, invoiceLink: link });
-      }
-
       case 'POST /api/ton/prepare': {
-        const stars = Math.floor(Number(body.stars));
+        const tonAmount = r4(body.tonAmount);
         const senderAddress = String(body.senderAddress || '').trim();
-        if (!stars || stars < 5 || stars > 100000) return bad('حداقل واریز ۵ استارز معادل TON است');
-        const rate = Number(S.starsPerTon || STARS_PER_TON);
-        const tonAmount = Number((stars / rate).toFixed(4));
+        if (!isFinite(tonAmount) || tonAmount < 0.01 || tonAmount > 10000) return bad('حداقل واریز 0.01 TON است');
         const nanoAmount = String(Math.round(tonAmount * 1e9));
-        // Base memo 398101056984149 + user id tag so every user deposit is uniquely identified & never confused
-        const fullMemo = `${TON_DEPOSIT_MEMO}`;
+        const fullMemo = TON_DEPOSIT_MEMO;
         const payloadBoc = textCommentToBocBase64(fullMemo);
         const orderId = 'ton_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
         const order = {
           id: orderId,
           uid: u.id,
-          stars,
           tonAmount,
           nanoAmount,
           address: TON_DEPOSIT_ADDR,
@@ -856,7 +803,6 @@ export class Game {
           memo: fullMemo,
           tonAmount,
           nanoAmount,
-          stars,
           payloadBoc,
           tonkeeperUniversal,
           tonDeepLink
@@ -869,7 +815,7 @@ export class Game {
         const order = this.meta.tonOrders.find(o => o.id === orderId && o.uid === u.id);
         if (!order) return bad('سفارش واریز TON یافت نشد');
         if (order.status === 'completed') {
-          return json(200, { ok: true, already: true, stars: order.stars, coins: u.coins });
+          return json(200, { ok: true, already: true, tonPaid: order.tonAmount, coins: u.coins });
         }
         if (senderAddress && !order.senderAddress) {
           order.senderAddress = senderAddress;
@@ -881,7 +827,6 @@ export class Game {
           return json(202, { ok: false, pending: true, error: check.reason });
         }
 
-        // Prevent replay of the same on-chain transaction hash
         if (this.meta.usedTonTxs.includes(check.txHash)) {
           return bad('این تراکنش قبلاً ثبت و استفاده شده است');
         }
@@ -892,48 +837,47 @@ export class Game {
         order.txHash = check.txHash;
         order.completedAt = now;
 
-        const rate = Number(S.starsPerTon || STARS_PER_TON);
-        const creditedStars = r2(Math.max(order.stars, Math.floor(check.tonPaid * rate)));
-        u.coins = r2(u.coins + creditedStars);
-        this.addTx(u, 'deposit', creditedStars, `شارژ تاییدشده با Tonkeeper (${check.tonPaid.toFixed(4)} TON = ${creditedStars} ⭐)`);
-        this.rewardReferrer(u, creditedStars, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
+        const creditedTon = r4(Math.max(order.tonAmount, check.tonPaid));
+        u.coins = r4(u.coins + creditedTon);
+        this.addTx(u, 'deposit', creditedTon, `شارژ تاییدشده با Tonkeeper (+${fmtTon(creditedTon)} TON)`);
+        this.rewardReferrer(u, creditedTon, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
         this.touch(u);
         this.saveMeta();
 
         await this.tg('sendMessage', {
           chat_id: u.id,
-          text: `💎 واریز ${check.tonPaid.toFixed(4)} TON با موفقیت در بلاک‌چین تایید شد!\n⭐ معادل ${creditedStars} استارز به حساب شما اضافه شد.\nموجودی فعلی: ${u.coins} ⭐`
+          text: `💎 واریز ${fmtTon(creditedTon)} TON با موفقیت در بلاک‌چین تایید شد!\nموجودی فعلی شما: ${fmtTon(u.coins)} TON`
         });
         if (this.env.ADMIN_ID) {
           await this.tg('sendMessage', {
             chat_id: String(this.env.ADMIN_ID),
-            text: `💎 واریز تاییدشده Tonkeeper:\nکاربر: ${u.name} (${u.id})\nمبلغ: ${check.tonPaid.toFixed(4)} TON\nشارژ بازی: ${creditedStars} ⭐\nممو: ${order.fullMemo}`
+            text: `💎 واریز تاییدشده Tonkeeper:\nکاربر: ${u.name} (${u.id})\nمبلغ: ${fmtTon(creditedTon)} TON\nممو: ${order.fullMemo}`
           });
         }
 
-        return json(200, { ok: true, stars: creditedStars, tonPaid: check.tonPaid, coins: u.coins });
+        return json(200, { ok: true, tonPaid: creditedTon, coins: u.coins });
       }
 
       case 'POST /api/withdraw': {
-        const amount = Number(body.amount);
+        const amount = r4(body.amount);
         const tonAddress = String(body.tonAddress || '').trim();
-        if (!isFinite(amount) || amount < 50) return bad('حداقل مبلغ برداشت ۵۰ استارز است');
-        if (u.coins < amount) return bad('موجودی کافی نیست');
-        const tax = r2(amount * 0.10);
+        if (!isFinite(amount) || amount < 0.2) return bad('حداقل مبلغ برداشت 0.2 TON است');
+        if (r4(u.coins) < amount) return bad('موجودی TON کافی نیست');
+        const tax = r4(amount * 0.10);
         this.fundPromoPool(tax * 0.20);
-        const net = r2(amount - tax);
-        u.coins = r2(u.coins - amount);
+        const net = r4(amount - tax);
+        u.coins = Math.max(0, r4(u.coins - amount));
         const reqId = 'wd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         const item = {
           id: reqId, uid: u.id, name: u.name, username: u.username || '',
           tonAddress,
-          gross: r2(amount), tax, net, status: 'pending', method: '', created: now
+          gross: amount, tax, net, status: 'pending', created: now
         };
         this.meta.withdrawals.unshift(item);
         this.meta.withdrawals = this.meta.withdrawals.slice(0, 200);
         this.addTx(
           u, 'withdraw', -amount,
-          `درخواست برداشت ${amount} ⭐ (۱۰٪ مالیات: ${tax} ⭐، خالص: ${net} ⭐)${tonAddress ? ` • آدرس TON: ${tonAddress}` : ''}`,
+          `درخواست برداشت ${fmtTon(amount)} TON (۱۰٪ مالیات: ${fmtTon(tax)} TON، خالص: ${fmtTon(net)} TON)${tonAddress ? ` • آدرس: ${tonAddress}` : ''}`,
           'pending'
         );
         this.touch(u);
@@ -941,7 +885,7 @@ export class Game {
         if (this.env.ADMIN_ID) {
           await this.tg('sendMessage', {
             chat_id: String(this.env.ADMIN_ID),
-            text: `💸 درخواست برداشت جدید:\nکاربر: ${u.name} (${u.id})\nمبلغ درخواستی: ${amount} ⭐\nمالیات ۱۰٪: ${tax} ⭐\nقابل پرداخت خالص: ${net} ⭐\nآدرس TON: ${tonAddress || 'وارد نشده'}`
+            text: `💸 درخواست برداشت جدید:\nکاربر: ${u.name} (${u.id})\nمبلغ درخواستی: ${fmtTon(amount)} TON\nمالیات ۱۰٪: ${fmtTon(tax)} TON\nقابل پرداخت خالص: ${fmtTon(net)} TON\nآدرس TON: ${tonAddress || 'وارد نشده'}`
           });
         }
         return json(200, { ok: true, withdrawal: item });
@@ -949,15 +893,15 @@ export class Game {
 
       case 'POST /api/wheel': {
         if (now < u.lastWheel + DAY) return bad('هنوز زمان چرخش نرسیده');
-        let r = Math.random() * 100, v = 1;
-        for (const s of WHEEL) { if ((r -= s.w) < 0) { v = s.v; break; } }
-        const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${v} ⭐)`);
+        // Exact odds: 0.01 TON -> 99%, 0.1 TON -> 1%
+        const v = Math.random() < 0.99 ? 0.01 : 0.1;
+        const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${fmtTon(v)} TON)`);
         if (paid <= 0) return bad('بودجه جایزه روزانه فعلاً تکمیل شده است');
         u.lastWheel = now;
-        this.addXp(u, 5);
+        this.addXp(u, 0.25);
         this.addGameLog(u, 'wheel', `جایزه گردونه روزانه`, paid);
         this.touch(u);
-        return json(200, { prize: paid, segments: WHEEL.map(s => s.v) });
+        return json(200, { prize: paid });
       }
 
       case 'POST /api/tag': {
@@ -968,7 +912,7 @@ export class Game {
         const ch = await this.tg('getChat', { chat_id: u.id });
         if (ch) name = [ch.first_name, ch.last_name].filter(Boolean).join(' ');
         if (!name.toLowerCase().includes(bu.toLowerCase())) return bad(`@${bu} را در اسم پروفایل‌تان بگذارید`);
-        const paid = this.payoutFromPool(u, 3, 'جایزه اسم ربات در پروفایل');
+        const paid = this.payoutFromPool(u, 0.01, 'جایزه اسم ربات در پروفایل');
         if (paid <= 0) return bad('بودجه جایزه فعلاً تکمیل شده است');
         u.lastTag = now;
         this.addGameLog(u, 'tag', 'جایزه اسم ربات در پروفایل', paid);
@@ -979,52 +923,52 @@ export class Game {
       case 'GET /api/leaderboard': {
         const us = Object.values(this.users);
         const top = k => [...us].sort((a, b) => b[k] - a[k]).slice(0, 20)
-          .map(x => ({ name: x.name, photo: x.photo, level: levelOf(x.xp), value: r2(x[k]) }));
+          .map(x => ({ name: x.name, photo: x.photo, level: levelOf(x.xp), value: r4(x[k]) }));
         return json(200, { circulation: top('wagered'), winners: top('won'), rich: top('coins') });
       }
 
       case 'GET /api/admin/users':
         return json(200, {
           users: Object.values(this.users).sort((a, b) => b.created - a.created).slice(0, 200).map(x => ({
-            id: x.id, name: x.name, username: x.username, coins: r2(x.coins),
-            refCount: x.refCount || 0, refEarned: r2(x.refEarned || 0),
+            id: x.id, name: x.name, username: x.username, coins: r4(x.coins),
+            refCount: x.refCount || 0, refEarned: r4(x.refEarned || 0),
             streak: x.streak || 0, bestStreak: x.bestStreak || 0,
             banned: x.banned, txs: (x.txs || []).slice(0, 20), gameLogs: (x.gameLogs || []).slice(0, 20)
           })),
           withdrawals: this.meta.withdrawals.slice(0, 100),
-          promoPool: r2(this.meta.promoPool || 0),
-          settings: { ...S, startCoins: 0, starsPerTon: S.starsPerTon || STARS_PER_TON }
+          promoPool: r4(this.meta.promoPool || 0),
+          settings: { ...S, startCoins: 0 }
         });
 
       case 'POST /api/admin/coins': {
-        const t = this.findUserByQuery(body.id), amt = Number(body.amount);
-        if (!t || !isFinite(amt) || amt === 0) return bad('کاربر (آیدی یا یوزرنیم) یا مقدار نامعتبر است');
-        t.coins = Math.max(0, r2(t.coins + amt));
-        this.addTx(t, amt >= 0 ? 'admin_add' : 'admin_sub', amt, 'شارژ / کسر دستی توسط ادمین');
+        const t = this.findUserByQuery(body.id), amt = r4(body.amount);
+        if (!t || !isFinite(amt) || amt === 0) return bad('کاربر (آیدی یا یوزرنیم) یا مقدار TON نامعتبر است');
+        t.coins = Math.max(0, r4(t.coins + amt));
+        this.addTx(t, amt >= 0 ? 'admin_add' : 'admin_sub', amt, 'تغییر دستی موجودی TON توسط ادمین');
         this.touch(t);
         await this.tg('sendMessage', {
           chat_id: t.id,
-          text: `${amt >= 0 ? '➕' : '➖'} ${Math.abs(amt)} استارز ${amt >= 0 ? 'به حساب شما اضافه' : 'از حساب شما کم'} شد.\nموجودی فعلی: ${t.coins} ⭐`
+          text: `${amt >= 0 ? '➕' : '➖'} ${fmtTon(Math.abs(amt))} TON ${amt >= 0 ? 'به حساب شما اضافه' : 'از حساب شما کم'} شد.\nموجودی فعلی: ${fmtTon(t.coins)} TON`
         });
         return json(200, { ok: true, coins: t.coins });
       }
 
       case 'POST /api/admin/bulk_coins': {
-        const amt = Number(body.amount);
-        if (!isFinite(amt) || amt === 0) return bad('مقدار سکه/استارز نامعتبر است');
+        const amt = r4(body.amount);
+        if (!isFinite(amt) || amt === 0) return bad('مقدار TON نامعتبر است');
         const allUsers = Object.values(this.users);
         let count = 0;
         for (const target of allUsers) {
-          const prev = r2(target.coins || 0);
-          const next = Math.max(0, r2(prev + amt));
-          const delta = r2(next - prev);
+          const prev = r4(target.coins || 0);
+          const next = Math.max(0, r4(prev + amt));
+          const delta = r4(next - prev);
           target.coins = next;
           if (delta !== 0) {
             this.addTx(
               target,
               delta >= 0 ? 'admin_add' : 'admin_sub',
               delta,
-              delta >= 0 ? `افزایش همگانی توسط ادمین (+${delta} ⭐)` : `کاهش همگانی توسط ادمین (${delta} ⭐)`
+              delta >= 0 ? `افزایش همگانی توسط ادمین (+${fmtTon(delta)} TON)` : `کاهش همگانی توسط ادمین (${fmtTon(delta)} TON)`
             );
           }
           this.touch(target);
@@ -1035,7 +979,6 @@ export class Game {
 
       case 'POST /api/admin/withdraw': {
         const wid = String(body.id || ''), act = body.action;
-        const payoutMethod = body.method === 'ton' ? 'ton' : 'stars';
         const adminNote = String(body.note || '').trim();
         const idx = this.meta.withdrawals.findIndex(w => w.id === wid);
         if (idx === -1) return bad('درخواست یافت نشد');
@@ -1043,22 +986,20 @@ export class Game {
         if (w.status !== 'pending') return bad('قبلاً بررسی شده است');
         const targetUser = this.users[w.uid];
         if (act === 'approve') {
-          const methodLabel = payoutMethod === 'ton' ? 'TON' : 'استارز (Stars)';
           w.status = 'approved';
-          w.method = payoutMethod;
           w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
             const tx = (targetUser.txs || []).find(t => t.status === 'pending' && t.type === 'withdraw' && Math.abs(t.amount) === w.gross);
             if (tx) {
               tx.status = 'approved';
-              tx.note = `${tx.note} • واریز با ${methodLabel}${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`;
+              tx.note = `${tx.note} • واریز TON تایید شد${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`;
             }
             this.touch(targetUser);
             const msgLines = [
-              `✅ برداشت ${w.gross} استارز شما (خالص ${w.net} ⭐ پس از ۱۰٪ مالیات) تایید و به صورت ${methodLabel} واریز شد.`
+              `✅ برداشت ${fmtTon(w.gross)} TON شما (خالص ${fmtTon(w.net)} TON پس از ۱۰٪ مالیات) تایید و واریز شد.`
             ];
-            if (payoutMethod === 'ton' && w.tonAddress) msgLines.push(`آدرس TON: ${w.tonAddress}`);
+            if (w.tonAddress) msgLines.push(`آدرس TON: ${w.tonAddress}`);
             if (adminNote) msgLines.push(`💬 پیام ادمین: ${adminNote}`);
             await this.tg('sendMessage', { chat_id: targetUser.id, text: msgLines.join('\n') });
           }
@@ -1067,16 +1008,16 @@ export class Game {
           w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
-            targetUser.coins = r2(targetUser.coins + w.gross);
+            targetUser.coins = r4(targetUser.coins + w.gross);
             this.addTx(
               targetUser,
               'deposit',
               w.gross,
-              `بازگشت وجه برداشت ردشده (${w.gross} ⭐)${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`
+              `بازگشت وجه برداشت ردشده (${fmtTon(w.gross)} TON)${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`
             );
             this.touch(targetUser);
             const msgLines = [
-              `❌ درخواست برداشت ${w.gross} استارز شما رد شد و مبلغ به موجودی بازگشت.`
+              `❌ درخواست برداشت ${fmtTon(w.gross)} TON شما رد شد و مبلغ به موجودی بازگشت.`
             ];
             if (adminNote) msgLines.push(`💬 پیام ادمین: ${adminNote}`);
             await this.tg('sendMessage', { chat_id: targetUser.id, text: msgLines.join('\n') });
@@ -1095,7 +1036,7 @@ export class Game {
       }
 
       case 'POST /api/admin/queue':
-        S.queue = (body.queue || []).map(Number).filter(n => n >= 1 && n <= 1000).map(r2).slice(0, 50);
+        S.queue = (body.queue || []).map(Number).filter(n => n >= 1 && n <= 1000).map(n => Math.round(n * 100) / 100).slice(0, 50);
         this.saveMeta();
         return json(200, { ok: true, queue: S.queue });
 
@@ -1104,9 +1045,8 @@ export class Game {
         if (body.maxMult >= 1.1) S.maxMult = Math.min(25, Number(body.maxMult));
         if (body.edge >= 0 && body.edge < 0.5) S.edge = Number(body.edge);
         if (body.greed >= 0 && body.greed <= 1) S.greed = Number(body.greed);
-        if (body.starsPerTon >= 1) S.starsPerTon = Number(body.starsPerTon);
         S.startCoins = 0;
-        if (body.promoPool !== undefined && Number(body.promoPool) >= 0) this.meta.promoPool = r2(Number(body.promoPool));
+        if (body.promoPool !== undefined && Number(body.promoPool) >= 0) this.meta.promoPool = r4(Number(body.promoPool));
         this.saveMeta();
         return json(200, { ok: true, settings: S, promoPool: this.meta.promoPool });
     }

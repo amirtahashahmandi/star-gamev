@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Starsia</title>
+<title>Tonia</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <style>
@@ -77,11 +77,11 @@ body{
 .bar{height:5px;background:rgba(255,255,255,.12);border-radius:9px;overflow:hidden;margin-top:4px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
 .coins{
-  background:linear-gradient(135deg,rgba(255,201,77,.18),rgba(124,92,255,.18));
-  border:1px solid rgba(255,201,77,.5);padding:7px 13px;border-radius:99px;
-  font-weight:800;color:var(--gold);
+  background:linear-gradient(135deg,rgba(0,152,234,.22),rgba(53,224,255,.16));
+  border:1px solid rgba(53,224,255,.55);padding:7px 13px;border-radius:99px;
+  font-weight:800;color:var(--acc2);
   box-shadow:0 8px 24px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.35);
-  transition:transform .2s ease
+  transition:transform .2s ease;white-space:nowrap
 }
 .coins:hover{transform:translateY(-1px) scale(1.02)}
 
@@ -330,8 +330,8 @@ small.m{color:var(--mut)}
 
 <div id="splash">
   <div class="logo-wrap">
-    <div class="logo-ring">⭐</div>
-    <div class="logo-title">STARSIA</div>
+    <div class="logo-ring">💎</div>
+    <div class="logo-title">TONIA</div>
     <div class="logo-line"></div>
   </div>
 </div>
@@ -355,7 +355,7 @@ small.m{color:var(--mut)}
       <div class="bar"><i id="xp"></i></div>
     </div>
     <button class="ghost" style="padding:8px 10px;border-radius:99px" id="sndBtn" onclick="toggleSound()">🔊</button>
-    <div class="coins">⭐ <span id="coins">0</span></div>
+    <div class="coins">💎 <span id="coins">0</span> TON</div>
   </div>
 
   <div class="page on" id="p-games">
@@ -363,7 +363,7 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge">DUAL BET + SHIELD • زنده</span>
         <div style="font-size:19px;font-weight:900">🚀 بازی کرش (Crash)</div>
-        <small class="m">شرط دوگانه (ایمن + ریسکی) و سپر ضد انفجار زیر 1.15x!</small>
+        <small class="m">شرط دوگانه با TON و سپر ضد انفجار زیر 1.15x!</small>
       </div>
       <div class="b-ico">🚀</div>
     </div>
@@ -372,7 +372,7 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge" style="background:rgba(255,201,77,.2);color:var(--gold);border-color:rgba(255,201,77,.4)">ARENA • رقابتی</span>
         <div style="font-size:19px;font-weight:900">⚔️ بازی آرنا (Arena)</div>
-        <small class="m">وارد میز شو، شانس بیشتری بساز و کل بانک را ببر!</small>
+        <small class="m">وارد میز TON شو، شانس بیشتری بساز و کل بانک را ببر!</small>
       </div>
       <div class="b-ico">⚔️</div>
     </div>
@@ -382,12 +382,12 @@ small.m{color:var(--mut)}
         <h3 style="margin:0">🔥 ماموریت روزانه و زنجیره برد</h3>
         <span class="streak-pill">⚡ برد متوالی: <b id="streakNow">0</b></span>
       </div>
-      <small class="m" style="display:block;margin-bottom:8px">هر ۳ برد متوالی = جایزه از بودجه بونوس • بودجه فعال بونوس: <b id="promoPoolTxt" style="color:var(--ok)">0 ⭐</b></small>
+      <small class="m" style="display:block;margin-bottom:8px">هر ۳ برد متوالی = جایزه TON • بودجه فعال بونوس: <b id="promoPoolTxt" style="color:var(--ok)">0 TON</b></small>
 
       <div class="mission-row">
         <div>
           <div>۳ بار برداشت بالای <b>2.0x</b> در کرش</div>
-          <small class="m">پیشرفت: <span id="mCrashProg">0</span>/3 • جایزه: 1.5 ⭐</small>
+          <small class="m">پیشرفت: <span id="mCrashProg">0</span>/3 • جایزه: 0.015 TON</small>
         </div>
         <button id="mCrashBtn" onclick="claimMission('crash2x')">دریافت</button>
       </div>
@@ -395,7 +395,7 @@ small.m{color:var(--mut)}
       <div class="mission-row" style="border-bottom:0">
         <div>
           <div>۲ بار شرکت در بازی <b>آرنا</b></div>
-          <small class="m">پیشرفت: <span id="mArenaProg">0</span>/2 • جایزه: 1.5 ⭐</small>
+          <small class="m">پیشرفت: <span id="mArenaProg">0</span>/2 • جایزه: 0.015 TON</small>
         </div>
         <button id="mArenaBtn" onclick="claimMission('arena')">دریافت</button>
       </div>
@@ -419,11 +419,11 @@ small.m{color:var(--mut)}
     <div class="card" style="margin-top:12px">
       <div class="dual-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b>🎯 پنل شرط ۱ (ایمن / خودکار)</b>
+          <b>🎯 پنل شرط ۱ (TON)</b>
           <small class="m" id="stA"></small>
         </div>
         <div class="row">
-          <input id="amtA" type="number" inputmode="numeric" value="10" min="1" placeholder="مبلغ شرط ۱">
+          <input id="amtA" type="number" step="0.01" min="0.005" value="0.01" placeholder="مبلغ TON شرط ۱">
           <input id="autoA" type="number" step="0.1" value="1.6" placeholder="برداشت خودکار (مثلاً 1.6)">
         </div>
         <label class="shield-lbl">
@@ -440,11 +440,11 @@ small.m{color:var(--mut)}
 
       <div class="dual-box" style="margin-bottom:0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b>🚀 پنل شرط ۲ (دال بت / شکار ضریب بالا)</b>
+          <b>🚀 پنل شرط ۲ (TON)</b>
           <small class="m" id="stB"></small>
         </div>
         <div class="row">
-          <input id="amtB" type="number" inputmode="numeric" value="10" min="1" placeholder="مبلغ شرط ۲">
+          <input id="amtB" type="number" step="0.01" min="0.005" value="0.01" placeholder="مبلغ TON شرط ۲">
           <input id="autoB" type="number" step="0.1" placeholder="برداشت خودکار (مثلاً 3.0)">
         </div>
         <label class="shield-lbl">
@@ -471,15 +471,16 @@ small.m{color:var(--mut)}
 
   <div class="page" id="p-wheel">
     <div class="card" style="text-align:center">
-      <h3>🎡 گردونه‌ی روزانه</h3>
+      <h3>🎡 گردونه‌ی روزانه TON</h3>
+      <small class="m" style="display:block;margin-bottom:6px">شانس: 0.01 TON (۹۹٪) • 0.1 TON (۱٪) • 0.02 TON روی گردونه</small>
       <div class="pointer">▼</div>
       <canvas id="wheel" width="440" height="440"></canvas>
       <button id="wbtn" style="width:100%;margin-top:10px" onclick="spin()">بچرخان</button>
     </div>
     <div class="card">
       <h3>🏷 جایزه‌ی اسم ربات</h3>
-      <small class="m">آیدی ربات (<b id="botun"></b>) را در اسم پروفایل تلگرامتان بگذارید و هر ۲۴ ساعت ۳ استارز بگیرید.</small>
-      <button id="tbtn" class="o" style="width:100%;margin-top:10px" onclick="tag()">بررسی و دریافت ۳ استارز</button>
+      <small class="m">آیدی ربات (<b id="botun"></b>) را در اسم پروفایل تلگرامتان بگذارید و هر ۲۴ ساعت 0.01 TON بگیرید.</small>
+      <button id="tbtn" class="o" style="width:100%;margin-top:10px" onclick="tag()">بررسی و دریافت 0.01 TON</button>
     </div>
   </div>
 
@@ -500,74 +501,67 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>⭐ کیف استارز</h3>
-      <div style="font-size:32px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:10px">
-        ⭐ <span id="w2">0</span>
+      <h3>💎 کیف TON</h3>
+      <div style="font-size:28px;font-weight:900;color:var(--acc2);text-align:center;margin-bottom:10px">
+        💎 <span id="w2">0</span> TON
       </div>
 
-      <div style="margin-bottom:12px">
-        <small class="m">واریز مستقیم با Telegram Stars (حداقل ۵ استارز):</small>
+      <div class="ton-box" style="margin-top:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b>واریز مستقیم با Tonkeeper</b>
+          <small id="tonWalletBadge" class="m">کیف‌پول متصل نشده</small>
+        </div>
         <div class="row" style="margin-top:6px">
-          <button class="ghost" onclick="setDepStars(5)">5 ⭐</button>
-          <button class="ghost" onclick="setDepStars(25)">25 ⭐</button>
-          <button class="ghost" onclick="setDepStars(100)">100 ⭐</button>
+          <button class="ghost" onclick="setDepTon(0.05)">0.05 TON</button>
+          <button class="ghost" onclick="setDepTon(0.1)">0.1 TON</button>
+          <button class="ghost" onclick="setDepTon(0.5)">0.5 TON</button>
         </div>
         <div class="row" style="margin-top:8px">
-          <input id="depAmt" type="number" min="5" value="10" placeholder="تعداد استارز (حداقل ۵)">
-          <button class="g" onclick="depositStars()">واریز استارز</button>
+          <input id="depTonAmt" type="number" step="0.01" min="0.01" value="0.1" placeholder="مقدار TON (حداقل 0.01)">
+          <button class="ton" id="tonPayBtn" onclick="depositWithTonkeeper()">واریز با Tonkeeper</button>
+        </div>
+        <button class="ghost" style="width:100%;margin-top:8px" id="tonConnectBtn" onclick="connectTonWallet()">اتصال / تغییر کیف‌پول Tonkeeper</button>
+
+        <div id="tonPendingBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)">
+          <small class="pill-wait" id="tonPendingTxt">در انتظار تایید تراکنش روی شبکه TON...</small>
+          <div class="row" style="margin-top:6px">
+            <button class="g" style="padding:8px" onclick="verifyTonNow()">بررسی و ثبت واریز</button>
+            <button class="ghost" style="padding:8px" onclick="reopenTonkeeperLink()">باز کردن مجدد Tonkeeper</button>
+          </div>
         </div>
 
-        <div class="ton-box">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <b>💎 واریز مستقیم با Tonkeeper</b>
-            <small id="tonWalletBadge" class="m">کیف‌پول متصل نشده</small>
+        <details style="margin-top:8px">
+          <summary style="font-size:11px;color:var(--mut);cursor:pointer">مشاهده آدرس و ممو (کپی دستی در صورت نیاز)</summary>
+          <div class="mono-pill">
+            <span id="tonAddrDisp">EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu</span>
+            <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonAddrDisp').textContent,'آدرس TON کپی شد')">کپی</button>
           </div>
-          <small class="m" id="tonRateInfo">هر 1 TON = 100 ⭐ • مبلغ معادل به صورت خودکار به Tonkeeper ارسال می‌شود</small>
-          <div class="row" style="margin-top:8px">
-            <button class="ton" id="tonPayBtn" onclick="depositWithTonkeeper()">واریز با تون (Tonkeeper)</button>
-            <button class="ghost" style="flex:0 0 auto" id="tonConnectBtn" onclick="connectTonWallet()">اتصال کیف‌پول</button>
+          <div class="mono-pill">
+            <span>Memo: <b id="tonMemoDisp">398101056984149</b></span>
+            <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonMemoDisp').textContent,'ممو کپی شد')">کپی</button>
           </div>
-          <div id="tonPendingBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)">
-            <small class="pill-wait" id="tonPendingTxt">در انتظار تایید تراکنش روی شبکه TON...</small>
-            <div class="row" style="margin-top:6px">
-              <button class="g" style="padding:8px" onclick="verifyTonNow()">بررسی و ثبت واریز</button>
-              <button class="ghost" style="padding:8px" id="tonReopenBtn" onclick="reopenTonkeeperLink()">باز کردن مجدد Tonkeeper</button>
-            </div>
-          </div>
-          <details style="margin-top:8px">
-            <summary style="font-size:11px;color:var(--mut);cursor:pointer">مشاهده آدرس و ممو (کپی دستی در صورت نیاز)</summary>
-            <div class="mono-pill">
-              <span id="tonAddrDisp">EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu</span>
-              <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonAddrDisp').textContent,'آدرس TON کپی شد')">کپی</button>
-            </div>
-            <div class="mono-pill">
-              <span>Memo: <b id="tonMemoDisp">398101056984149</b></span>
-              <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonMemoDisp').textContent,'ممو کپی شد')">کپی</button>
-            </div>
-          </details>
-        </div>
+        </details>
       </div>
 
       <hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:12px 0">
 
       <div>
-        <small class="m">درخواست برداشت (حداقل ۵۰ استارز • ۱۰٪ مالیات کسر می‌شود):</small>
+        <small class="m">درخواست برداشت TON (حداقل 0.2 TON • ۱۰٪ مالیات کسر می‌شود):</small>
         <div class="row" style="margin-top:8px">
-          <input id="wdAmt" type="number" min="50" placeholder="مقدار برداشت (حداقل ۵۰)">
+          <input id="wdAmt" type="number" step="0.01" min="0.2" placeholder="مقدار TON (حداقل 0.2)">
           <button class="o" onclick="requestWithdraw()">ثبت برداشت</button>
         </div>
-        <input id="wdTon" type="text" placeholder="آدرس TON (اختیاری)" style="margin-top:8px;direction:ltr;text-align:left">
-        <small class="m" style="display:block;margin-top:4px">آدرس تون هم وارد کنید که در صورت مشکل به صورت تون واریز بشه.</small>
-        <div id="wdCalc" style="font-size:12px;color:var(--mut);margin-top:6px">مالیات ۱۰٪: 0 ⭐ • دریافتی خالص: 0 ⭐</div>
+        <input id="wdTon" type="text" placeholder="آدرس کیف‌پول TON مقصد" style="margin-top:8px;direction:ltr;text-align:left">
+        <div id="wdCalc" style="font-size:12px;color:var(--mut);margin-top:6px">مالیات ۱۰٪: 0 TON • دریافتی خالص: 0 TON</div>
       </div>
     </div>
 
     <div class="card">
       <h3>🤝 دعوت از دوستان (رفرال)</h3>
-      <small class="m">با دعوت هر دوست، <b>۸٪ از هر واریز</b> و <b>۰.۵٪ از هر بازی</b> او را پاداش بگیرید!</small>
+      <small class="m">با دعوت هر دوست، <b>۸٪ از هر واریز TON</b> و <b>۰.۵٪ از هر بازی TON</b> او را پاداش بگیرید!</small>
       <div class="stat" style="margin:10px 0">
         <div><b id="refCnt">0</b><small>تعداد زیرمجموعه‌ها</small></div>
-        <div><b id="refEarn">0 ⭐</b><small>کل درآمد رفرال</small></div>
+        <div><b id="refEarn">0 TON</b><small>کل درآمد رفرال</small></div>
       </div>
       <div class="row">
         <input id="refLink" readonly style="font-size:12px;direction:ltr" value="در حال ساخت لینک...">
@@ -600,7 +594,7 @@ small.m{color:var(--mut)}
     <div class="card">
       <h3>💰 شارژ / مدیریت کاربر (با آیدی عددی یا @یوزرنیم)</h3>
       <input id="aid" placeholder="آیدی عددی یا @username کاربر">
-      <input id="aamt" type="number" placeholder="مقدار استارز (منفی = کم کردن)" style="margin-top:8px">
+      <input id="aamt" type="number" step="0.01" placeholder="مقدار TON (منفی = کم کردن)" style="margin-top:8px">
       <div class="row" style="margin-top:8px">
         <button class="g" onclick="adminCoins()">اعمال موجودی</button>
         <button class="r" onclick="adminBan(true)">بن</button>
@@ -609,9 +603,9 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>🌐 افزایش / کاهش سکه برای همه کاربران</h3>
+      <h3>🌐 افزایش / کاهش TON برای همه کاربران</h3>
       <small class="m" style="display:block;margin-bottom:8px">مقدار مثبت به همه اضافه می‌کند و مقدار منفی از همه کم می‌کند (موجودی زیر ۰ نمی‌رود).</small>
-      <input id="bulkAmt" type="number" placeholder="مقدار سکه (مثلاً 10 یا -10)">
+      <input id="bulkAmt" type="number" step="0.01" placeholder="مقدار TON (مثلاً 0.05 یا -0.05)">
       <div class="row" style="margin-top:8px">
         <button class="g" onclick="adminBulkCoins(1)">اضافه به همه</button>
         <button class="r" onclick="adminBulkCoins(-1)">کم کردن از همه</button>
@@ -619,13 +613,13 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>💸 درخواست‌های برداشت در انتظار تایید</h3>
+      <h3>💸 درخواست‌های برداشت TON در انتظار تایید</h3>
       <small class="m" style="display:block;margin-bottom:8px">می‌توانید برای هر درخواست یک پیام اختیاری بنویسید یا خالی بگذارید تا فقط پیام وضعیت ارسال شود.</small>
       <div id="awithdrawals"></div>
     </div>
 
     <div class="card">
-      <h3>🎯 الگوریتم ضریب، نرخ TON و بودجه بونوس</h3>
+      <h3>🎯 الگوریتم ضریب و بودجه بونوس</h3>
       <div class="row">
         <input id="smin" placeholder="حداقل ضریب">
         <input id="smax" placeholder="حداکثر ضریب">
@@ -635,8 +629,7 @@ small.m{color:var(--mut)}
         <input id="sgreed" placeholder="میزان طمع 0 تا 1 (مثلاً 0.42)">
       </div>
       <div class="row" style="margin-bottom:8px">
-        <input id="spool" placeholder="بودجه بونوس و ماموریت">
-        <input id="stonrate" placeholder="هر 1 TON چند استارز (مثلاً 100)">
+        <input id="spool" placeholder="بودجه بونوس و ماموریت (TON)">
       </div>
       <button style="width:100%" onclick="adminSettings()">ذخیره تنظیمات</button>
     </div>
@@ -648,7 +641,7 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>👥 کاربران، موجودی و سابقه هر کاربر</h3>
+      <h3>👥 کاربران، موجودی TON و سابقه هر کاربر</h3>
       <div id="ausers"></div>
       <div id="auserDetail" style="margin-top:10px"></div>
     </div>
@@ -720,7 +713,11 @@ function copyText(txt, msg = 'کپی شد') {
   navigator.clipboard?.writeText(String(txt || ''));
   toast('✅ ' + msg);
 }
-const fmt = n => Number(n).toLocaleString('en', { maximumFractionDigits: 2 });
+const fmt = n => {
+  const v = Number(n || 0);
+  if (!isFinite(v)) return '0';
+  return Number(v.toFixed(4)).toString();
+};
 const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '';
 const ms2t = ms => {
   const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
@@ -728,7 +725,6 @@ const ms2t = ms => {
 };
 const cleanBotName = s => String(s || '').trim().replace(/^@+/, '');
 
-// TON Connect UI Integration (Tonkeeper)
 let tonConnectUI = null, connectedTonAddress = '', activeTonOrder = null, tonPollTimer = null;
 function initTonConnect() {
   try {
@@ -744,11 +740,11 @@ function initTonConnect() {
         connectedTonAddress = wallet.account.address;
         const shortAddr = connectedTonAddress.slice(0, 6) + '...' + connectedTonAddress.slice(-5);
         $('tonWalletBadge').innerHTML = `<span class="pill-ok">متصل: ${shortAddr}</span>`;
-        $('tonConnectBtn').textContent = 'تغییر کیف‌پول';
+        $('tonConnectBtn').textContent = 'تغییر کیف‌پول Tonkeeper';
       } else {
         connectedTonAddress = '';
         $('tonWalletBadge').textContent = 'کیف‌پول متصل نشده';
-        $('tonConnectBtn').textContent = 'اتصال کیف‌پول';
+        $('tonConnectBtn').textContent = 'اتصال / تغییر کیف‌پول Tonkeeper';
       }
     });
   } catch (e) {
@@ -763,18 +759,9 @@ async function connectTonWallet() {
   } catch {}
 }
 
-function setDepStars(v) {
-  $('depAmt').value = v;
-  updateTonPreview();
+function setDepTon(v) {
+  $('depTonAmt').value = v;
 }
-function updateTonPreview() {
-  const rate = Number((me && me.tonDeposit && me.tonDeposit.starsPerTon) || 100);
-  const stars = Math.max(5, Math.floor(Number($('depAmt').value || 10)));
-  const tonVal = (stars / rate).toFixed(4);
-  $('tonRateInfo').textContent = `هر 1 TON = ${rate} ⭐ • مبلغ واریزی فعلی: ${tonVal} TON (${stars} ⭐)`;
-}
-$('depAmt').addEventListener('input', updateTonPreview);
-
 function startTonVerificationLoop() {
   clearInterval(tonPollTimer);
   let attempts = 0;
@@ -785,7 +772,6 @@ function startTonVerificationLoop() {
     await verifyTonNow(true);
   }, 4000);
 }
-
 async function verifyTonNow(silent = false) {
   if (!activeTonOrder) return;
   try {
@@ -798,35 +784,32 @@ async function verifyTonNow(silent = false) {
       $('tonPendingBox').style.display = 'none';
       activeTonOrder = null;
       beep(880, 0.18, 'triangle', 0.14);
-      toast(`💎 تایید شد! ${fmt(r.stars)} ⭐ به موجودی اضافه شد.`);
+      toast(`💎 تایید شد! +${fmt(r.tonPaid)} TON به موجودی اضافه شد.`);
       poll();
     } else if (!silent) {
       toast(r.error || 'هنوز تراکنش روی شبکه TON تایید نشده است');
     }
   } catch {}
 }
-
 function reopenTonkeeperLink() {
   if (!activeTonOrder) return;
   const url = activeTonOrder.tonkeeperUniversal;
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, '_blank');
 }
-
 async function depositWithTonkeeper() {
-  const stars = Math.floor(Number($('depAmt').value || 0));
-  if (stars < 5) return toast('حداقل واریز ۵ استارز معادل TON است');
+  const tonAmount = Number($('depTonAmt').value || 0);
+  if (!isFinite(tonAmount) || tonAmount < 0.01) return toast('حداقل واریز 0.01 TON است');
   try {
     const prep = await api('ton/prepare', {
-      stars,
+      tonAmount,
       senderAddress: connectedTonAddress
     });
     activeTonOrder = prep;
     $('tonPendingBox').style.display = 'block';
-    $('tonPendingTxt').textContent = `در انتظار تایید ${prep.tonAmount} TON (${prep.stars} ⭐) روی بلاک‌چین...`;
+    $('tonPendingTxt').textContent = `در انتظار تایید ${fmt(prep.tonAmount)} TON روی بلاک‌چین...`;
     startTonVerificationLoop();
 
-    // If wallet is already connected via TON Connect, trigger direct Tonkeeper transaction approval
     if (tonConnectUI && tonConnectUI.connected) {
       try {
         await tonConnectUI.sendTransaction({
@@ -847,7 +830,6 @@ async function depositWithTonkeeper() {
       }
     }
 
-    // Fallback or direct Tonkeeper universal link with pre-filled address, exact TON amount, and memo
     if (tg && tg.openLink) {
       tg.openLink(prep.tonkeeperUniversal);
     } else {
@@ -879,7 +861,7 @@ function multClass(v) {
   })();
 })();
 
-let st = null, me = null, botUsername = '', tab = 'games', selectedArena = 10, meHistMode = 'tx', lastArenaWinnerAt = 0, prevCrashPhase = '';
+let st = null, me = null, botUsername = '', tab = 'games', selectedArena = 0.1, meHistMode = 'tx', lastArenaWinnerAt = 0, prevCrashPhase = '';
 
 function go(t, b) {
   tab = t;
@@ -890,7 +872,7 @@ function go(t, b) {
     b.classList.add('on');
   }
   if (t === 'lb') lbTab('circulation', document.querySelector('#p-lb .sub button'));
-  if (t === 'me') { renderMeHist(); updateTonPreview(); }
+  if (t === 'me') renderMeHist();
   if (t === 'admin') loadAdmin();
 }
 function openGame(g) {
@@ -927,7 +909,7 @@ function openSupportBot() {
 
 function renderMissionsAndStreak(u) {
   $('streakNow').textContent = u.streak || 0;
-  $('promoPoolTxt').textContent = fmt(u.promoPool ?? 0) + ' ⭐';
+  $('promoPoolTxt').textContent = fmt(u.promoPool ?? 0) + ' TON';
   const m = u.missions || {};
   const cProg = Math.min(3, m.crash2x || 0);
   const aProg = Math.min(2, m.arenaPlays || 0);
@@ -936,19 +918,19 @@ function renderMissionsAndStreak(u) {
 
   const cb = $('mCrashBtn');
   if (m.claimedCrash2x) { cb.textContent = 'دریافت شده ✅'; cb.disabled = true; cb.className = 'ghost'; }
-  else if (cProg >= 3) { cb.textContent = 'دریافت 1.5 ⭐'; cb.disabled = false; cb.className = 'g'; }
+  else if (cProg >= 3) { cb.textContent = 'دریافت 0.015 TON'; cb.disabled = false; cb.className = 'g'; }
   else { cb.textContent = `${cProg}/3`; cb.disabled = true; cb.className = 'ghost'; }
 
   const ab = $('mArenaBtn');
   if (m.claimedArena) { ab.textContent = 'دریافت شده ✅'; ab.disabled = true; ab.className = 'ghost'; }
-  else if (aProg >= 2) { ab.textContent = 'دریافت 1.5 ⭐'; ab.disabled = false; ab.className = 'g'; }
+  else if (aProg >= 2) { ab.textContent = 'دریافت 0.015 TON'; ab.disabled = false; ab.className = 'g'; }
   else { ab.textContent = `${aProg}/2`; ab.disabled = true; ab.className = 'ghost'; }
 }
 async function claimMission(mission) {
   try {
     const r = await api('mission/claim', { mission });
     beep(860, 0.14);
-    toast(`🎁 ${fmt(r.reward)} استارز پاداش ماموریت دریافت شد!`);
+    toast(`🎁 ${fmt(r.reward)} TON پاداش ماموریت دریافت شد!`);
     poll();
   } catch {}
 }
@@ -962,23 +944,22 @@ function setUser(u) {
   if (u.tonDeposit) {
     $('tonAddrDisp').textContent = u.tonDeposit.address;
     $('tonMemoDisp').textContent = u.tonDeposit.memo;
-    updateTonPreview();
   }
   $('nm').textContent = $('nm2').textContent = u.name;
-  const av = u.photo ? `<img src="${u.photo}">` : (u.name[0] || '⭐');
+  const av = u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎');
   $('av').innerHTML = $('av2').innerHTML = av;
   $('lv').textContent = $('lv2').textContent = 'سطح ' + u.level + (u.username ? ` • @${u.username}` : '');
   $('coins').textContent = $('w2').textContent = fmt(u.coins);
   $('refCnt').textContent = u.refCount || 0;
-  $('refEarn').textContent = fmt(u.refEarned || 0) + ' ⭐';
+  $('refEarn').textContent = fmt(u.refEarned || 0) + ' TON';
   updateRefLink();
   renderMissionsAndStreak(u);
-  const T = [0, 50, 150, 400, 900, 1800, 3500, 7000, 14000, 30000, 1e9];
+  const T = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300, 1e9];
   const lo = T[u.level - 1] || 0, hi = T[u.level];
   $('xp').style.width = Math.min(100, (u.xp - lo) / (hi - lo) * 100) + '%';
   $('stats').innerHTML = [
     ['بازی‌ها', u.games], ['برد', u.wins], ['بیشترین ضریب', u.bestMult + 'x'],
-    ['رکورد برد متوالی', u.bestStreak || 0], ['در گردش', fmt(u.wagered)], ['مجموع برد', fmt(u.won)]
+    ['رکورد برد متوالی', u.bestStreak || 0], ['در گردش', fmt(u.wagered) + ' TON'], ['مجموع برد', fmt(u.won) + ' TON']
   ].map(a => `<div><b>${a[1]}</b><small>${a[0]}</small></div>`).join('');
   if (u.isAdmin) $('admtab').style.display = '';
   $('wbtn').disabled = u.wheelIn > 0;
@@ -990,11 +971,12 @@ function setUser(u) {
 const cv = $('cv'), cx = cv.getContext('2d'); let syncT = 0;
 function qSlot(slot, f) {
   const id = slot === 'a' ? 'amtA' : 'amtB';
-  $(id).value = Math.max(1, Math.floor(Number($(id).value || 1) * f));
+  const cur = Number($(id).value || 0.01);
+  $(id).value = Math.max(0.005, Math.round(cur * f * 1000) / 1000);
 }
 function qaSlot(slot) {
   const id = slot === 'a' ? 'amtA' : 'amtB';
-  $(id).value = Math.max(1, Math.floor(me ? me.coins : 1));
+  $(id).value = Math.max(0.005, Number((me ? me.coins : 0.01).toFixed(4)));
 }
 async function slotAct(slot) {
   const c = st.crash;
@@ -1027,17 +1009,17 @@ function updateSlotUI(slot, m) {
   const labelNum = slot === 'a' ? '۱' : '۲';
 
   if (sObj) {
-    stEl.textContent = `شرط: ${sObj.amount} ⭐${sObj.shield ? ' • سپر فعال' : ''}`;
+    stEl.textContent = `شرط: ${fmt(sObj.amount)} TON${sObj.shield ? ' • سپر فعال' : ''}`;
   } else {
     stEl.textContent = '';
   }
 
   if (c.phase === 'bet') {
-    btn.textContent = sObj ? `ثبت شد (${sObj.amount} ⭐)` : `ثبت شرط ${labelNum}`;
+    btn.textContent = sObj ? `ثبت شد (${fmt(sObj.amount)} TON)` : `ثبت شرط ${labelNum}`;
     btn.disabled = !!sObj;
     btn.className = '';
   } else if (c.phase === 'run' && sObj && !sObj.cashed && !sObj.lost) {
-    btn.textContent = `برداشت ${labelNum}: ` + fmt(sObj.amount * m) + ' ⭐';
+    btn.textContent = `برداشت ${labelNum}: ` + fmt(sObj.amount * m) + ' TON';
     btn.disabled = false;
     btn.className = 'g';
   } else {
@@ -1105,9 +1087,9 @@ function renderCrash() {
   $('ghist').innerHTML = histHtml || '<small class="m">هنوز ضریبی ثبت نشده</small>';
   $('plist').innerHTML = c.players.map(p => {
     const winPart = p.cashed
-      ? ` <b class="pill-ok">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} ⭐</b>`
+      ? ` <b class="pill-ok">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} TON</b>`
       : '';
-    return `<div class="pl"><span>${p.name}</span><span>شرط: ⭐ ${p.amount}${winPart}</span></div>`;
+    return `<div class="pl"><span>${p.name}</span><span>شرط: 💎 ${fmt(p.amount)} TON${winPart}</span></div>`;
   }).join('') || '<small class="m">هنوز کسی شرط نبسته</small>';
 }
 
@@ -1115,7 +1097,7 @@ const ARENA_COLS = ['#35e0ff', '#ffc94d', '#c084fc', '#3ddc97', '#ff5d7a', '#7c5
 function renderArena() {
   if (!st || !st.arenas) return;
   $('arenaTabs').innerHTML = st.arenas.map(a =>
-    `<button class="${a.entry === selectedArena ? 'on' : ''}" onclick="selectedArena=${a.entry};renderArena()">میز ${a.entry} ⭐</button>`
+    `<button class="${a.entry === selectedArena ? 'on' : ''}" onclick="selectedArena=${a.entry};renderArena()">میز ${fmt(a.entry)} TON</button>`
   ).join('');
   const a = st.arenas.find(x => x.entry === selectedArena) || st.arenas[0];
   if (!a) return;
@@ -1123,13 +1105,13 @@ function renderArena() {
   if (a.last && a.last.at > lastArenaWinnerAt) {
     lastArenaWinnerAt = a.last.at;
     $('wWinnerName').textContent = a.last.winner;
-    $('wWinnerPrize').textContent = `+${fmt(a.last.prize)} ⭐ جایزه`;
+    $('wWinnerPrize').textContent = `+${fmt(a.last.prize)} TON جایزه`;
     $('winnerModal').classList.add('show');
     beep(920, 0.2, 'triangle', 0.12);
   }
 
   const totalBank = a.entry * a.players.length;
-  const prize = (totalBank * 0.95).toFixed(2);
+  const prize = totalBank * 0.95;
   const cdSec = a.left != null ? Math.max(0, Math.ceil(a.left / 1000)) : null;
   const plusAngle = ((Date.now() / 12) % 360);
   const centerImg = a.players[0]?.photo ? `<img src="${a.players[0].photo}">` : '⚔️';
@@ -1137,8 +1119,8 @@ function renderArena() {
   $('arenaStage').innerHTML = `
     <div class="card" style="text-align:center">
       <div style="font-size:12px;color:var(--mut)">مجموع بانک (BANK)</div>
-      <div style="font-size:28px;font-weight:900;color:var(--gold)">⭐ ${fmt(totalBank)}</div>
-      <small class="m">جایزه برنده: ${fmt(prize)} ⭐ • حداقل ۲ نفر</small>
+      <div style="font-size:28px;font-weight:900;color:var(--acc2)">💎 ${fmt(totalBank)} TON</div>
+      <small class="m">جایزه برنده: ${fmt(prize)} TON • حداقل ۲ نفر</small>
 
       <div class="arena-ring-wrap">
         <canvas id="arenaCv" width="380" height="380"></canvas>
@@ -1150,7 +1132,7 @@ function renderArena() {
       </div>
 
       <button style="width:100%;font-size:16px" ${a.joined ? 'disabled' : ''} onclick="joinA(${a.entry})">
-        ${a.joined ? 'وارد میز شده‌اید ✅' : `ورود به آرنا (${a.entry} ⭐)`}
+        ${a.joined ? 'وارد میز شده‌اید ✅' : `ورود به آرنا (${fmt(a.entry)} TON)`}
       </button>
     </div>
 
@@ -1160,7 +1142,7 @@ function renderArena() {
         const chance = a.players.length ? (100 / a.players.length).toFixed(1) : 0;
         return `<div class="pl">
           <span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ARENA_COLS[i % ARENA_COLS.length]};margin-left:6px"></i>${p.name}</span>
-          <span>شانس: <b>${chance}%</b> • ⭐ ${a.entry}</span>
+          <span>شانس: <b>${chance}%</b> • 💎 ${fmt(a.entry)} TON</span>
         </div>`;
       }).join('') || '<small class="m">هنوز بازیکنی وارد نشده است</small>'}
     </div>
@@ -1188,16 +1170,21 @@ async function joinA(e) {
   try { await api('arena/join', { entry: e }); beep(660, 0.1); toast('وارد آرنا شدید'); poll(); } catch {}
 }
 
-const SEG = [1, 2, 1, 2, 4, 1, 2, 8, 1, 2, 4, 10], COL = ['#7c5cff', '#35e0ff', '#ffc94d', '#ff5d7a', '#3ddc97']; let rot = 0;
+// Wheel segments display 0.01, 0.02, 0.1 TON; random draw is strictly 0.01 (99%) and 0.1 (1%)
+const SEG = [0.01, 0.02, 0.01, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02];
+const COL = ['#35e0ff', '#ffc94d', '#7c5cff'];
+let rot = 0;
 function drawWheel() {
   const c = $('wheel'), x = c.getContext('2d'), n = SEG.length, a = 2 * Math.PI / n;
   x.clearRect(0, 0, 440, 440);
   SEG.forEach((v, i) => {
     x.beginPath(); x.moveTo(220, 220); x.arc(220, 220, 214, i * a, (i + 1) * a);
-    x.fillStyle = COL[[1, 2, 4, 8, 10].indexOf(v)]; x.fill();
+    x.fillStyle = v === 0.1 ? '#ffc94d' : (v === 0.02 ? '#7c5cff' : '#35e0ff');
+    x.fill();
     x.strokeStyle = '#090d26'; x.lineWidth = 3; x.stroke();
     x.save(); x.translate(220, 220); x.rotate(i * a + a / 2);
-    x.fillStyle = '#090d26'; x.font = 'bold 30px sans-serif'; x.textAlign = 'right'; x.fillText(v, 190, 11); x.restore();
+    x.fillStyle = '#090d26'; x.font = 'bold 24px sans-serif'; x.textAlign = 'right';
+    x.fillText(String(v), 192, 9); x.restore();
   });
 }
 drawWheel();
@@ -1210,44 +1197,29 @@ async function spin() {
     rot += 360 * 5 + ((270 - (i * a + a / 2)) - (rot % 360) + 360) % 360;
     $('wheel').style.transform = `rotate(${rot}deg)`;
     $('wbtn').disabled = true;
-    setTimeout(() => { beep(840, 0.16); toast('🎉 ' + r.prize + ' استارز برنده شدی!'); poll(); }, 4100);
+    setTimeout(() => { beep(840, 0.16); toast('🎉 ' + fmt(r.prize) + ' TON برنده شدی!'); poll(); }, 4100);
   } catch {}
 }
 async function tag() {
-  try { const r = await api('tag', {}); toast(`🎁 ${r.prize} استارز دریافت شد`); poll(); } catch {}
+  try { const r = await api('tag', {}); toast(`🎁 ${fmt(r.prize)} TON دریافت شد`); poll(); } catch {}
 }
 
-async function depositStars() {
-  const stars = Math.floor(Number($('depAmt').value || 0));
-  if (stars < 5) return toast('حداقل واریز استارز ۵ عدد است');
-  try {
-    const r = await api('stars/invoice', { stars });
-    if (tg && tg.openInvoice) {
-      tg.openInvoice(r.invoiceLink, status => {
-        if (status === 'paid') { toast('✅ واریز استارز با موفقیت انجام شد'); setTimeout(poll, 700); }
-        else toast('پرداخت لغو شد');
-      });
-    } else {
-      window.open(r.invoiceLink, '_blank');
-    }
-  } catch {}
-}
 $('wdAmt').addEventListener('input', () => {
   const v = Number($('wdAmt').value || 0);
-  const tax = v >= 50 ? (v * 0.1).toFixed(2) : '0';
-  const net = v >= 50 ? (v * 0.9).toFixed(2) : '0';
-  $('wdCalc').textContent = `مالیات ۱۰٪: ${tax} ⭐ • دریافتی خالص: ${net} ⭐`;
+  const tax = v >= 0.2 ? fmt(v * 0.1) : '0';
+  const net = v >= 0.2 ? fmt(v * 0.9) : '0';
+  $('wdCalc').textContent = `مالیات ۱۰٪: ${tax} TON • دریافتی خالص: ${net} TON`;
 });
 async function requestWithdraw() {
   const amount = Number($('wdAmt').value || 0);
   const tonAddress = String($('wdTon').value || '').trim();
-  if (amount < 50) return toast('حداقل برداشت ۵۰ استارز است');
+  if (!isFinite(amount) || amount < 0.2) return toast('حداقل برداشت 0.2 TON است');
   try {
     await api('withdraw', { amount, tonAddress });
     $('wdAmt').value = '';
     $('wdTon').value = '';
-    $('wdCalc').textContent = 'مالیات ۱۰٪: 0 ⭐ • دریافتی خالص: 0 ⭐';
-    toast('درخواست برداشت ثبت شد (در انتظار تایید ادمین)');
+    $('wdCalc').textContent = 'مالیات ۱۰٪: 0 TON • دریافتی خالص: 0 TON';
+    toast('درخواست برداشت TON ثبت شد (در انتظار تایید ادمین)');
     poll();
   } catch {}
 }
@@ -1267,7 +1239,7 @@ function renderMeHist() {
       const stBadge = t.status === 'pending' ? ' <span class="pill-wait">(در انتظار تایید)</span>' : '';
       return `<div class="pl">
         <div><div>${t.note}${stBadge}</div><small class="m">${fmtTime(t.at)}</small></div>
-        <b class="${cls}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} ⭐</b>
+        <b class="${cls}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} TON</b>
       </div>`;
     }).join('') || '<small class="m">تراکنشی ثبت نشده است</small>';
   } else {
@@ -1276,7 +1248,7 @@ function renderMeHist() {
       const cls = g.delta >= 0 ? 'pill-ok' : 'pill-bad';
       return `<div class="pl">
         <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
-        <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} ⭐</b>
+        <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
       </div>`;
     }).join('') || '<small class="m">سابقه بازی ثبت نشده است</small>';
   }
@@ -1287,7 +1259,7 @@ async function lbTab(k, b) {
   if (b) b.classList.add('on');
   const d = await api('leaderboard');
   $('lbbox').innerHTML = d[k].map((u, i) =>
-    `<div class="lb"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><div class="av" style="width:30px;height:30px;font-size:13px">${u.photo ? `<img src="${u.photo}">` : (u.name[0] || '⭐')}</div><span class="grow nm">${u.name} <small class="m">Lv${u.level}</small></span><b style="color:var(--gold)">${fmt(u.value)} ⭐</b></div>`
+    `<div class="lb"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><div class="av" style="width:30px;height:30px;font-size:13px">${u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎')}</div><span class="grow nm">${u.name} <small class="m">Lv${u.level}</small></span><b style="color:var(--acc2)">${fmt(u.value)} TON</b></div>`
   ).join('') || '<small class="m">هنوز داده‌ای نیست</small>';
 }
 
@@ -1299,20 +1271,18 @@ async function loadAdmin() {
   $('smin').value = s.minMult; $('smax').value = s.maxMult;
   $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
   $('spool').value = d.promoPool ?? 0;
-  $('stonrate').value = s.starsPerTon ?? 100;
   $('aq').value = s.queue.join(' ');
 
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
   $('awithdrawals').innerHTML = pending.map(w => `
     <div class="pl" style="flex-direction:column;align-items:stretch;gap:6px">
       <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}${w.uid})</div>
-      <div style="font-size:12px">درخواستی: <b>${w.gross} ⭐</b> | مالیات ۱۰٪: <b>${w.tax} ⭐</b> | خالص: <b class="pill-ok">${w.net} ⭐</b></div>
+      <div style="font-size:12px">درخواستی: <b>${fmt(w.gross)} TON</b> | مالیات ۱۰٪: <b>${fmt(w.tax)} TON</b> | خالص: <b class="pill-ok">${fmt(w.net)} TON</b></div>
       <div style="font-size:12px;color:var(--mut);direction:ltr;text-align:right">TON: <b>${w.tonAddress ? w.tonAddress : 'وارد نشده'}</b></div>
       <input id="wdMsg_${w.id}" type="text" placeholder="پیام اختیاری برای کاربر (خالی بماند ارسال نمی‌شود)">
       <div class="row">
-        <button class="g" style="padding:7px" onclick="decideWd('${w.id}','approve','stars')">تایید (با استارز)</button>
-        <button class="o" style="padding:7px" onclick="decideWd('${w.id}','approve','ton')">تایید (با تون)</button>
-        <button class="r" style="padding:7px" onclick="decideWd('${w.id}','reject')">رد و برگشت</button>
+        <button class="g" style="padding:7px" onclick="decideWd('${w.id}','approve')">تایید برداشت TON</button>
+        <button class="r" style="padding:7px" onclick="decideWd('${w.id}','reject')">رد و برگشت TON</button>
       </div>
     </div>
   `).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
@@ -1320,7 +1290,7 @@ async function loadAdmin() {
   $('ausers').innerHTML = d.users.map(u => `
     <div class="pl" style="cursor:pointer" onclick="showAdminUser('${u.id}')">
       <span>${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • ⚡${u.streak || 0}</small></span>
-      <span>⭐ <b>${fmt(u.coins)}</b> ${u.banned ? '🚫' : ''}</span>
+      <span>💎 <b>${fmt(u.coins)} TON</b> ${u.banned ? '🚫' : ''}</span>
     </div>
   `).join('');
 }
@@ -1329,26 +1299,26 @@ function showAdminUser(uid) {
   const u = adminCache.users.find(x => x.id === uid);
   if (!u) return;
   $('aid').value = u.username ? '@' + u.username : u.id;
-  const txs = (u.txs || []).slice(0, 8).map(t => `<div class="pl"><span>${t.note}</span><b class="${t.amount >= 0 ? 'pill-ok' : 'pill-bad'}">${t.amount >= 0 ? '+' : ''}${t.amount} ⭐</b></div>`).join('') || '<small class="m">بدون تراکنش</small>';
-  const gls = (u.gameLogs || []).slice(0, 8).map(g => `<div class="pl"><span>${g.detail}</span><b class="${g.delta >= 0 ? 'pill-ok' : 'pill-bad'}">${g.delta >= 0 ? '+' : ''}${g.delta} ⭐</b></div>`).join('') || '<small class="m">بدون بازی</small>';
+  const txs = (u.txs || []).slice(0, 8).map(t => `<div class="pl"><span>${t.note}</span><b class="${t.amount >= 0 ? 'pill-ok' : 'pill-bad'}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} TON</b></div>`).join('') || '<small class="m">بدون تراکنش</small>';
+  const gls = (u.gameLogs || []).slice(0, 8).map(g => `<div class="pl"><span>${g.detail}</span><b class="${g.delta >= 0 ? 'pill-ok' : 'pill-bad'}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b></div>`).join('') || '<small class="m">بدون بازی</small>';
   $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.58)">
-    <h3>سابقه ${u.name} (${u.id}) — موجودی: ${fmt(u.coins)} ⭐ • رفرال: ${u.refCount || 0} نفر</h3>
+    <h3>سابقه ${u.name} (${u.id}) — موجودی: ${fmt(u.coins)} TON • رفرال: ${u.refCount || 0} نفر</h3>
     <small class="m">سابقه مالی:</small>${txs}
     <small class="m" style="display:block;margin-top:8px">سابقه بازی‌ها:</small>${gls}
   </div>`;
 }
-async function decideWd(id, action, method = 'stars') {
+async function decideWd(id, action) {
   const noteEl = document.getElementById('wdMsg_' + id);
   const note = noteEl ? String(noteEl.value || '').trim() : '';
-  await api('admin/withdraw', { id, action, method, note });
+  await api('admin/withdraw', { id, action, note });
   toast('ثبت شد');
   loadAdmin();
   poll();
 }
-async function adminCoins() { await api('admin/coins', { id: $('aid').value, amount: $('aamt').value }); toast('موجودی اعمال شد'); loadAdmin(); poll(); }
+async function adminCoins() { await api('admin/coins', { id: $('aid').value, amount: $('aamt').value }); toast('موجودی TON اعمال شد'); loadAdmin(); poll(); }
 async function adminBulkCoins(sign) {
   const raw = Math.abs(Number($('bulkAmt').value || 0));
-  if (!raw) return toast('مقدار معتبر وارد کنید');
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
   const amount = sign * raw;
   const r = await api('admin/bulk_coins', { amount });
   toast(`روی ${r.updatedCount} کاربر اعمال شد`);
@@ -1361,8 +1331,7 @@ async function adminSettings() {
   await api('admin/settings', {
     minMult: $('smin').value, maxMult: $('smax').value,
     edge: $('sedge').value, greed: $('sgreed').value,
-    startCoins: 0, promoPool: $('spool').value,
-    starsPerTon: $('stonrate').value
+    startCoins: 0, promoPool: $('spool').value
   });
   toast('تنظیمات ذخیره شد');
   poll();
