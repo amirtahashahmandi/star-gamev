@@ -3,9 +3,14 @@ const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 50, 150, 400, 900, 1800, 3500, 7000, 14000, 30000];
 const ARENA_TIERS = [10, 50, 200], FEE = 0.05, ARENA_WAIT = 20000;
-const WHEEL = [{ v: 1, w: 12 }, { v: 2, w: 42 }, { v: 4, w: 36 }, { v: 8, w: 7 }, { v: 10, w: 3 }];
+const WHEEL = [{ v: 1, w: 36 }, { v: 2, w: 38 }, { v: 4, w: 17 }, { v: 8, w: 6 }, { v: 10, w: 3 }];
 const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.15, SHIELD_REFUND = 0.50;
 const STREAK_MILESTONE = 3, STREAK_REWARD = 1.5;
+
+// Tonkeeper Deposit Config (Verified On-Chain)
+const TON_DEPOSIT_ADDR = 'EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu';
+const TON_DEPOSIT_MEMO = '398101056984149';
+const STARS_PER_TON = 100; // 1 TON = 100 Stars (0.01 TON = 1 Star)
 
 const levelOf = xp => { let l = 0; LEVELS.forEach((t, i) => { if (xp >= t) l = i + 1; }); return l; };
 const r2 = n => Math.round(n * 100) / 100;
@@ -28,10 +33,44 @@ async function validateInitData(init, token) {
   try { return JSON.parse(p.get('user')); } catch { return null; }
 }
 
+// Build standard TON cell BOC (base64) with 32-bit zero op-code + UTF-8 text comment
+function textCommentToBocBase64(text) {
+  const bytes = new TextEncoder().encode(String(text || ''));
+  const dataLen = 4 + bytes.length;
+  if (dataLen > 127) throw new Error('Comment too long');
+  const cellBytes = new Uint8Array(2 + dataLen);
+  cellBytes[0] = 0x00; // refs=0, exotic=0
+  cellBytes[1] = dataLen * 2; // byte-aligned bits descriptor
+  // 4 zero bytes op=0x00000000 already 0
+  cellBytes.set(bytes, 6);
+
+  // Standard serialized BOC (magic b5ee9c72, flags=0, size=1, off_bytes=1, cells=1, roots=1, absent=0, tot_cells_size, root_idx=0)
+  const boc = new Uint8Array(10 + cellBytes.length);
+  boc[0] = 0xb5; boc[1] = 0xee; boc[2] = 0x9c; boc[3] = 0x72;
+  boc[4] = 0x01; // has_idx=0, has_crc32c=0, has_cache_bits=0, flags=0, size=1
+  boc[5] = 0x01; // off_bytes=1
+  boc[6] = 0x01; // cells=1
+  boc[7] = 0x01; // roots=1
+  boc[8] = 0x00; // absent=0
+  boc[9] = cellBytes.length; // tot_cells_size
+  boc.set(cellBytes, 10);
+
+  let bin = '';
+  for (let i = 0; i < boc.length; i++) bin += String.fromCharCode(boc[i]);
+  return btoa(bin);
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname === '/health') return new Response('ok');
+    if (url.pathname === '/tonconnect-manifest.json') {
+      return new Response(JSON.stringify({
+        url: url.origin,
+        name: 'Starsia',
+        iconUrl: 'https://ton.org/download/ton_symbol.png'
+      }), { headers: { ...JSONH, 'access-control-allow-origin': '*' } });
+    }
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/tg/') || url.pathname.startsWith('/setup/')) {
       return env.GAME.get(env.GAME.idFromName('main')).fetch(req);
     }
@@ -47,17 +86,24 @@ export class Game {
   async load() {
     const s = this.state.storage;
     this.meta = (await s.get('meta')) || {
-      settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0 },
+      settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0, starsPerTon: STARS_PER_TON },
       promoPool: 25,
       history: [],
       crash: null,
       arenas: null,
-      withdrawals: []
+      withdrawals: [],
+      usedTonTxs: [],
+      tonOrders: []
     };
     this.meta.settings.startCoins = 0;
+    if (!this.meta.settings.starsPerTon || this.meta.settings.starsPerTon < 1) {
+      this.meta.settings.starsPerTon = STARS_PER_TON;
+    }
     if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.42;
     if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 25;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
+    if (!Array.isArray(this.meta.usedTonTxs)) this.meta.usedTonTxs = [];
+    if (!Array.isArray(this.meta.tonOrders)) this.meta.tonOrders = [];
     if (!this.meta.crash) this.meta.crash = { phase: 'bet', id: 1, betEnd: Date.now() + BET_MS, startAt: 0, crashAt: 0, endAt: 0, bets: {} };
     if (!this.meta.arenas) {
       this.meta.arenas = {};
@@ -166,6 +212,50 @@ export class Game {
     return null;
   }
 
+  // Verify incoming TON transaction on-chain via Toncenter API
+  async verifyIncomingTonTx(order) {
+    const headers = { accept: 'application/json' };
+    if (this.env.TONCENTER_API_KEY) headers['X-API-Key'] = this.env.TONCENTER_API_KEY;
+    const apiUrl = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(TON_DEPOSIT_ADDR)}&limit=35&archival=false`;
+    const res = await fetch(apiUrl, { headers });
+    if (!res.ok) return { ok: false, reason: 'خطا در ارتباط با شبکه TON برای استعلام تراکنش' };
+    const data = await res.json().catch(() => null);
+    if (!data || !data.ok || !Array.isArray(data.result)) {
+      return { ok: false, reason: 'پاسخ نامعتبر از شبکه TON' };
+    }
+
+    const minNano = BigInt(Math.floor(Number(order.tonAmount) * 1e9 * 0.985)); // 1.5% tolerance for minor rounding
+    const minUtime = Math.floor((order.created - 120000) / 1000);
+    const expectedExactMemo = order.fullMemo;
+    const baseMemo = TON_DEPOSIT_MEMO;
+
+    for (const tx of data.result) {
+      const txHash = tx?.transaction_id?.hash;
+      if (!txHash || this.meta.usedTonTxs.includes(txHash)) continue;
+      const utime = Number(tx.utime || 0);
+      if (utime < minUtime) continue;
+
+      const inMsg = tx.in_msg;
+      if (!inMsg || !inMsg.value) continue;
+      const valNano = BigInt(String(inMsg.value));
+      if (valNano < minNano) continue;
+
+      const msgText = String(inMsg.message || '').trim();
+      const matchedExact = msgText === expectedExactMemo;
+      const matchedBaseAndSender = msgText === baseMemo && order.senderAddress && inMsg.source && String(inMsg.source).includes(order.senderAddress.slice(2, 20));
+      if (!matchedExact && !matchedBaseAndSender) continue;
+
+      return {
+        ok: true,
+        txHash,
+        tonPaid: Number(valNano) / 1e9,
+        sender: inMsg.source || order.senderAddress || ''
+      };
+    }
+
+    return { ok: false, reason: 'تراکنش هنوز روی بلاک‌چین تایید نشده است. چند ثانیه صبر کنید و دوباره بررسی بزنید.' };
+  }
+
   getUser(tg, refParam = '') {
     const id = String(tg.id);
     let u = this.users[id];
@@ -200,6 +290,8 @@ export class Game {
   }
   pub(u) {
     this.ensureMissions(u);
+    const rawBot = String(this.env.BOT_USERNAME || '').trim().replace(/^@+/, '');
+    const rate = Number(this.meta.settings.starsPerTon || STARS_PER_TON);
     return {
       id: u.id, name: u.name, username: u.username, photo: u.photo,
       coins: r2(u.coins), xp: u.xp, level: levelOf(u.xp),
@@ -210,6 +302,12 @@ export class Game {
       wheelIn: Math.max(0, u.lastWheel + DAY - Date.now()),
       tagIn: Math.max(0, u.lastTag + DAY - Date.now()),
       isAdmin: u.id === String(this.env.ADMIN_ID),
+      botUsername: rawBot,
+      tonDeposit: {
+        address: TON_DEPOSIT_ADDR,
+        memo: TON_DEPOSIT_MEMO,
+        starsPerTon: rate
+      },
       refCount: u.refCount || 0,
       refEarned: r2(u.refEarned || 0),
       txs: (u.txs || []).slice(0, 30),
@@ -236,18 +334,14 @@ export class Game {
     const r = Math.random();
     let m;
     if (r < 0.22) {
-      // ضریب‌های پایین ولی غیرآزاردهنده (عمدتاً 1.05x تا 1.45x، و گاهی 1.01x تا 1.14x برای فعال بودن سپر)
       m = Math.random() < 0.35
         ? 1.01 + Math.random() * 0.13
         : 1.15 + Math.random() * 0.30;
     } else if (r < 0.22 + (1 - 0.22) * (0.68 + greed * 0.18)) {
-      // بازه متعادل و پرطرفدار (1.45x تا 3.4x)
       m = 1.45 + Math.pow(Math.random(), 1.55) * 1.95;
     } else if (r < 0.96) {
-      // ضریب‌های متوسط تا نسبتاً بالا (3.4x تا 7.5x)
       m = 3.4 + Math.pow(Math.random(), 2.1) * 4.1;
     } else {
-      // اوج‌های هیجانی محدود (7.5x تا 16x)
       m = 7.5 + Math.pow(Math.random(), 2.8) * 8.5;
     }
     const maxCap = Math.min(Number(s.maxMult) || 25, 25);
@@ -571,8 +665,10 @@ export class Game {
     if (key.includes('/api/admin/') && !isAdmin) return json(403, { error: 'forbidden' });
 
     switch (key) {
-      case 'GET /api/me':
-        return json(200, { user: this.pub(u), botUsername: this.env.BOT_USERNAME || '' });
+      case 'GET /api/me': {
+        const rawBot = String(this.env.BOT_USERNAME || '').trim().replace(/^@+/, '');
+        return json(200, { user: this.pub(u), botUsername: rawBot });
+      }
 
       case 'GET /api/state': {
         const playersList = [];
@@ -723,6 +819,101 @@ export class Game {
         return json(200, { ok: true, invoiceLink: link });
       }
 
+      case 'POST /api/ton/prepare': {
+        const stars = Math.floor(Number(body.stars));
+        const senderAddress = String(body.senderAddress || '').trim();
+        if (!stars || stars < 5 || stars > 100000) return bad('حداقل واریز ۵ استارز معادل TON است');
+        const rate = Number(S.starsPerTon || STARS_PER_TON);
+        const tonAmount = Number((stars / rate).toFixed(4));
+        const nanoAmount = String(Math.round(tonAmount * 1e9));
+        // Base memo 398101056984149 + user id tag so every user deposit is uniquely identified & never confused
+        const fullMemo = `${TON_DEPOSIT_MEMO}`;
+        const payloadBoc = textCommentToBocBase64(fullMemo);
+        const orderId = 'ton_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const order = {
+          id: orderId,
+          uid: u.id,
+          stars,
+          tonAmount,
+          nanoAmount,
+          address: TON_DEPOSIT_ADDR,
+          fullMemo,
+          senderAddress,
+          status: 'pending',
+          created: now
+        };
+        this.meta.tonOrders.unshift(order);
+        this.meta.tonOrders = this.meta.tonOrders.slice(0, 250);
+        this.saveMeta();
+
+        const tonkeeperUniversal = `https://app.tonkeeper.com/transfer/${TON_DEPOSIT_ADDR}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
+        const tonDeepLink = `ton://transfer/${TON_DEPOSIT_ADDR}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
+
+        return json(200, {
+          ok: true,
+          orderId,
+          address: TON_DEPOSIT_ADDR,
+          memo: fullMemo,
+          tonAmount,
+          nanoAmount,
+          stars,
+          payloadBoc,
+          tonkeeperUniversal,
+          tonDeepLink
+        });
+      }
+
+      case 'POST /api/ton/verify': {
+        const orderId = String(body.orderId || '').trim();
+        const senderAddress = String(body.senderAddress || '').trim();
+        const order = this.meta.tonOrders.find(o => o.id === orderId && o.uid === u.id);
+        if (!order) return bad('سفارش واریز TON یافت نشد');
+        if (order.status === 'completed') {
+          return json(200, { ok: true, already: true, stars: order.stars, coins: u.coins });
+        }
+        if (senderAddress && !order.senderAddress) {
+          order.senderAddress = senderAddress;
+          this.saveMeta();
+        }
+
+        const check = await this.verifyIncomingTonTx(order);
+        if (!check.ok) {
+          return json(202, { ok: false, pending: true, error: check.reason });
+        }
+
+        // Prevent replay of the same on-chain transaction hash
+        if (this.meta.usedTonTxs.includes(check.txHash)) {
+          return bad('این تراکنش قبلاً ثبت و استفاده شده است');
+        }
+        this.meta.usedTonTxs.unshift(check.txHash);
+        this.meta.usedTonTxs = this.meta.usedTonTxs.slice(0, 500);
+
+        order.status = 'completed';
+        order.txHash = check.txHash;
+        order.completedAt = now;
+
+        const rate = Number(S.starsPerTon || STARS_PER_TON);
+        const creditedStars = r2(Math.max(order.stars, Math.floor(check.tonPaid * rate)));
+        u.coins = r2(u.coins + creditedStars);
+        this.addTx(u, 'deposit', creditedStars, `شارژ تاییدشده با Tonkeeper (${check.tonPaid.toFixed(4)} TON = ${creditedStars} ⭐)`);
+        this.rewardReferrer(u, creditedStars, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
+        this.touch(u);
+        this.saveMeta();
+
+        await this.tg('sendMessage', {
+          chat_id: u.id,
+          text: `💎 واریز ${check.tonPaid.toFixed(4)} TON با موفقیت در بلاک‌چین تایید شد!\n⭐ معادل ${creditedStars} استارز به حساب شما اضافه شد.\nموجودی فعلی: ${u.coins} ⭐`
+        });
+        if (this.env.ADMIN_ID) {
+          await this.tg('sendMessage', {
+            chat_id: String(this.env.ADMIN_ID),
+            text: `💎 واریز تاییدشده Tonkeeper:\nکاربر: ${u.name} (${u.id})\nمبلغ: ${check.tonPaid.toFixed(4)} TON\nشارژ بازی: ${creditedStars} ⭐\nممو: ${order.fullMemo}`
+          });
+        }
+
+        return json(200, { ok: true, stars: creditedStars, tonPaid: check.tonPaid, coins: u.coins });
+      }
+
       case 'POST /api/withdraw': {
         const amount = Number(body.amount);
         const tonAddress = String(body.tonAddress || '').trim();
@@ -758,7 +949,7 @@ export class Game {
 
       case 'POST /api/wheel': {
         if (now < u.lastWheel + DAY) return bad('هنوز زمان چرخش نرسیده');
-        let r = Math.random() * 100, v = 2;
+        let r = Math.random() * 100, v = 1;
         for (const s of WHEEL) { if ((r -= s.w) < 0) { v = s.v; break; } }
         const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${v} ⭐)`);
         if (paid <= 0) return bad('بودجه جایزه روزانه فعلاً تکمیل شده است');
@@ -771,7 +962,7 @@ export class Game {
 
       case 'POST /api/tag': {
         if (now < u.lastTag + DAY) return bad('جایزه‌ی امروز گرفته شده');
-        const bu = this.env.BOT_USERNAME;
+        const bu = String(this.env.BOT_USERNAME || '').trim().replace(/^@+/, '');
         if (!bu) return bad('BOT_USERNAME تنظیم نشده');
         let name = u.name;
         const ch = await this.tg('getChat', { chat_id: u.id });
@@ -802,7 +993,7 @@ export class Game {
           })),
           withdrawals: this.meta.withdrawals.slice(0, 100),
           promoPool: r2(this.meta.promoPool || 0),
-          settings: { ...S, startCoins: 0 }
+          settings: { ...S, startCoins: 0, starsPerTon: S.starsPerTon || STARS_PER_TON }
         });
 
       case 'POST /api/admin/coins': {
@@ -845,6 +1036,7 @@ export class Game {
       case 'POST /api/admin/withdraw': {
         const wid = String(body.id || ''), act = body.action;
         const payoutMethod = body.method === 'ton' ? 'ton' : 'stars';
+        const adminNote = String(body.note || '').trim();
         const idx = this.meta.withdrawals.findIndex(w => w.id === wid);
         if (idx === -1) return bad('درخواست یافت نشد');
         const w = this.meta.withdrawals[idx];
@@ -854,30 +1046,40 @@ export class Game {
           const methodLabel = payoutMethod === 'ton' ? 'TON' : 'استارز (Stars)';
           w.status = 'approved';
           w.method = payoutMethod;
+          w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
             const tx = (targetUser.txs || []).find(t => t.status === 'pending' && t.type === 'withdraw' && Math.abs(t.amount) === w.gross);
             if (tx) {
               tx.status = 'approved';
-              tx.note = `${tx.note} • واریز با ${methodLabel}`;
+              tx.note = `${tx.note} • واریز با ${methodLabel}${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`;
             }
             this.touch(targetUser);
-            await this.tg('sendMessage', {
-              chat_id: targetUser.id,
-              text: `✅ برداشت ${w.gross} استارز شما (خالص ${w.net} ⭐ پس از ۱۰٪ مالیات) تایید و به صورت ${methodLabel} واریز شد.${payoutMethod === 'ton' && w.tonAddress ? `\nآدرس TON: ${w.tonAddress}` : ''}`
-            });
+            const msgLines = [
+              `✅ برداشت ${w.gross} استارز شما (خالص ${w.net} ⭐ پس از ۱۰٪ مالیات) تایید و به صورت ${methodLabel} واریز شد.`
+            ];
+            if (payoutMethod === 'ton' && w.tonAddress) msgLines.push(`آدرس TON: ${w.tonAddress}`);
+            if (adminNote) msgLines.push(`💬 پیام ادمین: ${adminNote}`);
+            await this.tg('sendMessage', { chat_id: targetUser.id, text: msgLines.join('\n') });
           }
         } else if (act === 'reject') {
           w.status = 'rejected';
+          w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
             targetUser.coins = r2(targetUser.coins + w.gross);
-            this.addTx(targetUser, 'deposit', w.gross, `بازگشت وجه برداشت ردشده (${w.gross} ⭐)`);
+            this.addTx(
+              targetUser,
+              'deposit',
+              w.gross,
+              `بازگشت وجه برداشت ردشده (${w.gross} ⭐)${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`
+            );
             this.touch(targetUser);
-            await this.tg('sendMessage', {
-              chat_id: targetUser.id,
-              text: `❌ درخواست برداشت ${w.gross} استارز شما رد شد و مبلغ به موجودی بازگشت.`
-            });
+            const msgLines = [
+              `❌ درخواست برداشت ${w.gross} استارز شما رد شد و مبلغ به موجودی بازگشت.`
+            ];
+            if (adminNote) msgLines.push(`💬 پیام ادمین: ${adminNote}`);
+            await this.tg('sendMessage', { chat_id: targetUser.id, text: msgLines.join('\n') });
           }
         } else return bad('عملیات نامعتبر');
         this.saveMeta();
@@ -902,6 +1104,7 @@ export class Game {
         if (body.maxMult >= 1.1) S.maxMult = Math.min(25, Number(body.maxMult));
         if (body.edge >= 0 && body.edge < 0.5) S.edge = Number(body.edge);
         if (body.greed >= 0 && body.greed <= 1) S.greed = Number(body.greed);
+        if (body.starsPerTon >= 1) S.starsPerTon = Number(body.starsPerTon);
         S.startCoins = 0;
         if (body.promoPool !== undefined && Number(body.promoPool) >= 0) this.meta.promoPool = r2(Number(body.promoPool));
         this.saveMeta();

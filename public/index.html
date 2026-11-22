@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Starsia</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <style>
 :root{
   --bg:#050817;
@@ -84,7 +85,6 @@ body{
 }
 .coins:hover{transform:translateY(-1px) scale(1.02)}
 
-/* شیشه‌ای شفاف (غیر مات) با انیمیشن روان */
 .card,.banner{
   position:relative;
   background:linear-gradient(145deg,var(--glass-hi),var(--glass));
@@ -142,6 +142,7 @@ button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 22px rg
 button:active:not(:disabled){transform:scale(.96)}
 button:disabled{opacity:.42;cursor:not-allowed}
 button.g{background:linear-gradient(135deg,rgba(39,185,124,.86),rgba(24,130,86,.86))}
+button.ton{background:linear-gradient(135deg,rgba(0,152,234,.92),rgba(0,104,196,.92));box-shadow:0 8px 20px rgba(0,152,234,.34),inset 0 1px 0 rgba(255,255,255,.38)}
 button.r{background:linear-gradient(135deg,rgba(255,93,122,.86),rgba(194,44,74,.86))}
 button.o{background:linear-gradient(135deg,rgba(255,201,77,.9),rgba(227,148,18,.9));color:#251600}
 button.ghost{
@@ -156,6 +157,19 @@ input,select{
 }
 input:focus,select:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(53,224,255,.16)}
 .row{display:flex;gap:8px}.row>*{flex:1}
+
+.ton-box{
+  border:1px solid rgba(0,152,234,.45);
+  background:linear-gradient(145deg,rgba(0,152,234,.14),rgba(14,22,56,.32));
+  border-radius:16px;padding:12px;margin-top:10px
+}
+.mono-pill{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:11px;background:rgba(6,10,28,.55);
+  border:1px solid rgba(155,190,255,.22);border-radius:10px;
+  padding:7px 9px;direction:ltr;text-align:left;word-break:break-all;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px
+}
 
 #stage{
   position:relative;height:215px;border-radius:20px;overflow:hidden;
@@ -260,7 +274,6 @@ input:focus,select:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 
   animation:popIn .35s cubic-bezier(.18,.89,.32,1.28)
 }
 
-/* نوار پایین شیشه‌ای غیر مات با انیمیشن */
 .tabs{
   position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;justify-content:center;
   background:linear-gradient(180deg,rgba(18,28,72,.38),rgba(10,16,44,.52));
@@ -495,13 +508,43 @@ small.m{color:var(--mut)}
       <div style="margin-bottom:12px">
         <small class="m">واریز مستقیم با Telegram Stars (حداقل ۵ استارز):</small>
         <div class="row" style="margin-top:6px">
-          <button class="ghost" onclick="$('depAmt').value=5">5 ⭐</button>
-          <button class="ghost" onclick="$('depAmt').value=25">25 ⭐</button>
-          <button class="ghost" onclick="$('depAmt').value=100">100 ⭐</button>
+          <button class="ghost" onclick="setDepStars(5)">5 ⭐</button>
+          <button class="ghost" onclick="setDepStars(25)">25 ⭐</button>
+          <button class="ghost" onclick="setDepStars(100)">100 ⭐</button>
         </div>
         <div class="row" style="margin-top:8px">
-          <input id="depAmt" type="number" min="5" value="5" placeholder="تعداد استارز (حداقل ۵)">
+          <input id="depAmt" type="number" min="5" value="10" placeholder="تعداد استارز (حداقل ۵)">
           <button class="g" onclick="depositStars()">واریز استارز</button>
+        </div>
+
+        <div class="ton-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <b>💎 واریز مستقیم با Tonkeeper</b>
+            <small id="tonWalletBadge" class="m">کیف‌پول متصل نشده</small>
+          </div>
+          <small class="m" id="tonRateInfo">هر 1 TON = 100 ⭐ • مبلغ معادل به صورت خودکار به Tonkeeper ارسال می‌شود</small>
+          <div class="row" style="margin-top:8px">
+            <button class="ton" id="tonPayBtn" onclick="depositWithTonkeeper()">واریز با تون (Tonkeeper)</button>
+            <button class="ghost" style="flex:0 0 auto" id="tonConnectBtn" onclick="connectTonWallet()">اتصال کیف‌پول</button>
+          </div>
+          <div id="tonPendingBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)">
+            <small class="pill-wait" id="tonPendingTxt">در انتظار تایید تراکنش روی شبکه TON...</small>
+            <div class="row" style="margin-top:6px">
+              <button class="g" style="padding:8px" onclick="verifyTonNow()">بررسی و ثبت واریز</button>
+              <button class="ghost" style="padding:8px" id="tonReopenBtn" onclick="reopenTonkeeperLink()">باز کردن مجدد Tonkeeper</button>
+            </div>
+          </div>
+          <details style="margin-top:8px">
+            <summary style="font-size:11px;color:var(--mut);cursor:pointer">مشاهده آدرس و ممو (کپی دستی در صورت نیاز)</summary>
+            <div class="mono-pill">
+              <span id="tonAddrDisp">EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu</span>
+              <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonAddrDisp').textContent,'آدرس TON کپی شد')">کپی</button>
+            </div>
+            <div class="mono-pill">
+              <span>Memo: <b id="tonMemoDisp">398101056984149</b></span>
+              <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonMemoDisp').textContent,'ممو کپی شد')">کپی</button>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -577,11 +620,12 @@ small.m{color:var(--mut)}
 
     <div class="card">
       <h3>💸 درخواست‌های برداشت در انتظار تایید</h3>
+      <small class="m" style="display:block;margin-bottom:8px">می‌توانید برای هر درخواست یک پیام اختیاری بنویسید یا خالی بگذارید تا فقط پیام وضعیت ارسال شود.</small>
       <div id="awithdrawals"></div>
     </div>
 
     <div class="card">
-      <h3>🎯 الگوریتم ضریب، بودجه بونوس و طمع‌دهی</h3>
+      <h3>🎯 الگوریتم ضریب، نرخ TON و بودجه بونوس</h3>
       <div class="row">
         <input id="smin" placeholder="حداقل ضریب">
         <input id="smax" placeholder="حداکثر ضریب">
@@ -592,6 +636,7 @@ small.m{color:var(--mut)}
       </div>
       <div class="row" style="margin-bottom:8px">
         <input id="spool" placeholder="بودجه بونوس و ماموریت">
+        <input id="stonrate" placeholder="هر 1 TON چند استارز (مثلاً 100)">
       </div>
       <button style="width:100%" onclick="adminSettings()">ذخیره تنظیمات</button>
     </div>
@@ -664,12 +709,16 @@ async function api(p, body) {
   if (REF_PARAM) h['x-ref'] = REF_PARAM;
   const r = await fetch('/api/' + p, { method: body ? 'POST' : 'GET', headers: h, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json();
-  if (!r.ok) { toast(j.error || 'خطا'); throw j; }
+  if (!r.ok && r.status !== 202) { toast(j.error || 'خطا'); throw j; }
   return j;
 }
 function toast(t) {
   const e = $('toast'); e.textContent = t; e.style.display = 'block';
-  clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 2600);
+  clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 2800);
+}
+function copyText(txt, msg = 'کپی شد') {
+  navigator.clipboard?.writeText(String(txt || ''));
+  toast('✅ ' + msg);
 }
 const fmt = n => Number(n).toLocaleString('en', { maximumFractionDigits: 2 });
 const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -677,6 +726,135 @@ const ms2t = ms => {
   const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
   return h + ':' + String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 };
+const cleanBotName = s => String(s || '').trim().replace(/^@+/, '');
+
+// TON Connect UI Integration (Tonkeeper)
+let tonConnectUI = null, connectedTonAddress = '', activeTonOrder = null, tonPollTimer = null;
+function initTonConnect() {
+  try {
+    if (!window.TON_CONNECT_UI) return;
+    tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: `${location.origin}/tonconnect-manifest.json`
+    });
+    tonConnectUI.uiOptions = {
+      twaReturnUrl: cleanBotName(botUsername) ? `https://t.me/${cleanBotName(botUsername)}` : location.origin
+    };
+    tonConnectUI.onStatusChange(wallet => {
+      if (wallet && wallet.account && wallet.account.address) {
+        connectedTonAddress = wallet.account.address;
+        const shortAddr = connectedTonAddress.slice(0, 6) + '...' + connectedTonAddress.slice(-5);
+        $('tonWalletBadge').innerHTML = `<span class="pill-ok">متصل: ${shortAddr}</span>`;
+        $('tonConnectBtn').textContent = 'تغییر کیف‌پول';
+      } else {
+        connectedTonAddress = '';
+        $('tonWalletBadge').textContent = 'کیف‌پول متصل نشده';
+        $('tonConnectBtn').textContent = 'اتصال کیف‌پول';
+      }
+    });
+  } catch (e) {
+    console.warn('TonConnect init skipped', e);
+  }
+}
+async function connectTonWallet() {
+  if (!tonConnectUI) initTonConnect();
+  if (!tonConnectUI) return toast('در حال بارگذاری TonConnect...');
+  try {
+    await tonConnectUI.openModal();
+  } catch {}
+}
+
+function setDepStars(v) {
+  $('depAmt').value = v;
+  updateTonPreview();
+}
+function updateTonPreview() {
+  const rate = Number((me && me.tonDeposit && me.tonDeposit.starsPerTon) || 100);
+  const stars = Math.max(5, Math.floor(Number($('depAmt').value || 10)));
+  const tonVal = (stars / rate).toFixed(4);
+  $('tonRateInfo').textContent = `هر 1 TON = ${rate} ⭐ • مبلغ واریزی فعلی: ${tonVal} TON (${stars} ⭐)`;
+}
+$('depAmt').addEventListener('input', updateTonPreview);
+
+function startTonVerificationLoop() {
+  clearInterval(tonPollTimer);
+  let attempts = 0;
+  tonPollTimer = setInterval(async () => {
+    if (!activeTonOrder) return clearInterval(tonPollTimer);
+    attempts++;
+    if (attempts > 45) return clearInterval(tonPollTimer);
+    await verifyTonNow(true);
+  }, 4000);
+}
+
+async function verifyTonNow(silent = false) {
+  if (!activeTonOrder) return;
+  try {
+    const r = await api('ton/verify', {
+      orderId: activeTonOrder.orderId,
+      senderAddress: connectedTonAddress
+    });
+    if (r && r.ok) {
+      clearInterval(tonPollTimer);
+      $('tonPendingBox').style.display = 'none';
+      activeTonOrder = null;
+      beep(880, 0.18, 'triangle', 0.14);
+      toast(`💎 تایید شد! ${fmt(r.stars)} ⭐ به موجودی اضافه شد.`);
+      poll();
+    } else if (!silent) {
+      toast(r.error || 'هنوز تراکنش روی شبکه TON تایید نشده است');
+    }
+  } catch {}
+}
+
+function reopenTonkeeperLink() {
+  if (!activeTonOrder) return;
+  const url = activeTonOrder.tonkeeperUniversal;
+  if (tg && tg.openLink) tg.openLink(url);
+  else window.open(url, '_blank');
+}
+
+async function depositWithTonkeeper() {
+  const stars = Math.floor(Number($('depAmt').value || 0));
+  if (stars < 5) return toast('حداقل واریز ۵ استارز معادل TON است');
+  try {
+    const prep = await api('ton/prepare', {
+      stars,
+      senderAddress: connectedTonAddress
+    });
+    activeTonOrder = prep;
+    $('tonPendingBox').style.display = 'block';
+    $('tonPendingTxt').textContent = `در انتظار تایید ${prep.tonAmount} TON (${prep.stars} ⭐) روی بلاک‌چین...`;
+    startTonVerificationLoop();
+
+    // If wallet is already connected via TON Connect, trigger direct Tonkeeper transaction approval
+    if (tonConnectUI && tonConnectUI.connected) {
+      try {
+        await tonConnectUI.sendTransaction({
+          validUntil: Math.floor(Date.now() / 1000) + 600,
+          messages: [
+            {
+              address: prep.address,
+              amount: prep.nanoAmount,
+              payload: prep.payloadBoc
+            }
+          ]
+        });
+        toast('✅ تراکنش در Tonkeeper تایید شد؛ در حال ثبت روی شبکه...');
+        setTimeout(() => verifyTonNow(false), 2500);
+        return;
+      } catch (err) {
+        toast('تراکنش در کیف‌پول لغو شد یا در حال باز کردن Tonkeeper...');
+      }
+    }
+
+    // Fallback or direct Tonkeeper universal link with pre-filled address, exact TON amount, and memo
+    if (tg && tg.openLink) {
+      tg.openLink(prep.tonkeeperUniversal);
+    } else {
+      window.open(prep.tonkeeperUniversal, '_blank');
+    }
+  } catch {}
+}
 
 function multClass(v) {
   if (v >= 15) return 'm-rainbow';
@@ -712,7 +890,7 @@ function go(t, b) {
     b.classList.add('on');
   }
   if (t === 'lb') lbTab('circulation', document.querySelector('#p-lb .sub button'));
-  if (t === 'me') renderMeHist();
+  if (t === 'me') { renderMeHist(); updateTonPreview(); }
   if (t === 'admin') loadAdmin();
 }
 function openGame(g) {
@@ -724,8 +902,9 @@ function openGame(g) {
 
 function updateRefLink() {
   if (!me) return;
-  const link = botUsername
-    ? `https://t.me/${botUsername}?start=ref_${me.id}`
+  const bName = cleanBotName(botUsername || me.botUsername || '');
+  const link = bName
+    ? `https://t.me/${bName}?start=ref_${me.id}`
     : `${location.origin}/?ref=ref_${me.id}`;
   $('refLink').value = link;
 }
@@ -736,8 +915,9 @@ function copyRef() {
   toast('✅ لینک دعوت کپی شد');
 }
 function openSupportBot() {
-  if (botUsername) {
-    const url = `https://t.me/${botUsername}`;
+  const bName = cleanBotName(botUsername || (me && me.botUsername) || '');
+  if (bName) {
+    const url = `https://t.me/${bName}`;
     if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
     else window.open(url, '_blank');
   } else {
@@ -775,6 +955,15 @@ async function claimMission(mission) {
 
 function setUser(u) {
   me = u;
+  if (u.botUsername) {
+    botUsername = cleanBotName(u.botUsername);
+    $('botun').textContent = '@' + botUsername;
+  }
+  if (u.tonDeposit) {
+    $('tonAddrDisp').textContent = u.tonDeposit.address;
+    $('tonMemoDisp').textContent = u.tonDeposit.memo;
+    updateTonPreview();
+  }
   $('nm').textContent = $('nm2').textContent = u.name;
   const av = u.photo ? `<img src="${u.photo}">` : (u.name[0] || '⭐');
   $('av').innerHTML = $('av2').innerHTML = av;
@@ -999,7 +1188,7 @@ async function joinA(e) {
   try { await api('arena/join', { entry: e }); beep(660, 0.1); toast('وارد آرنا شدید'); poll(); } catch {}
 }
 
-const SEG = [1, 2, 4, 8, 10, 2, 4, 2, 4, 1], COL = ['#7c5cff', '#35e0ff', '#ffc94d', '#ff5d7a', '#3ddc97']; let rot = 0;
+const SEG = [1, 2, 1, 2, 4, 1, 2, 8, 1, 2, 4, 10], COL = ['#7c5cff', '#35e0ff', '#ffc94d', '#ff5d7a', '#3ddc97']; let rot = 0;
 function drawWheel() {
   const c = $('wheel'), x = c.getContext('2d'), n = SEG.length, a = 2 * Math.PI / n;
   x.clearRect(0, 0, 440, 440);
@@ -1008,7 +1197,7 @@ function drawWheel() {
     x.fillStyle = COL[[1, 2, 4, 8, 10].indexOf(v)]; x.fill();
     x.strokeStyle = '#090d26'; x.lineWidth = 3; x.stroke();
     x.save(); x.translate(220, 220); x.rotate(i * a + a / 2);
-    x.fillStyle = '#090d26'; x.font = 'bold 32px sans-serif'; x.textAlign = 'right'; x.fillText(v, 190, 11); x.restore();
+    x.fillStyle = '#090d26'; x.font = 'bold 30px sans-serif'; x.textAlign = 'right'; x.fillText(v, 190, 11); x.restore();
   });
 }
 drawWheel();
@@ -1110,6 +1299,7 @@ async function loadAdmin() {
   $('smin').value = s.minMult; $('smax').value = s.maxMult;
   $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
   $('spool').value = d.promoPool ?? 0;
+  $('stonrate').value = s.starsPerTon ?? 100;
   $('aq').value = s.queue.join(' ');
 
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
@@ -1118,6 +1308,7 @@ async function loadAdmin() {
       <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}${w.uid})</div>
       <div style="font-size:12px">درخواستی: <b>${w.gross} ⭐</b> | مالیات ۱۰٪: <b>${w.tax} ⭐</b> | خالص: <b class="pill-ok">${w.net} ⭐</b></div>
       <div style="font-size:12px;color:var(--mut);direction:ltr;text-align:right">TON: <b>${w.tonAddress ? w.tonAddress : 'وارد نشده'}</b></div>
+      <input id="wdMsg_${w.id}" type="text" placeholder="پیام اختیاری برای کاربر (خالی بماند ارسال نمی‌شود)">
       <div class="row">
         <button class="g" style="padding:7px" onclick="decideWd('${w.id}','approve','stars')">تایید (با استارز)</button>
         <button class="o" style="padding:7px" onclick="decideWd('${w.id}','approve','ton')">تایید (با تون)</button>
@@ -1146,7 +1337,14 @@ function showAdminUser(uid) {
     <small class="m" style="display:block;margin-top:8px">سابقه بازی‌ها:</small>${gls}
   </div>`;
 }
-async function decideWd(id, action, method = 'stars') { await api('admin/withdraw', { id, action, method }); toast('ثبت شد'); loadAdmin(); poll(); }
+async function decideWd(id, action, method = 'stars') {
+  const noteEl = document.getElementById('wdMsg_' + id);
+  const note = noteEl ? String(noteEl.value || '').trim() : '';
+  await api('admin/withdraw', { id, action, method, note });
+  toast('ثبت شد');
+  loadAdmin();
+  poll();
+}
 async function adminCoins() { await api('admin/coins', { id: $('aid').value, amount: $('aamt').value }); toast('موجودی اعمال شد'); loadAdmin(); poll(); }
 async function adminBulkCoins(sign) {
   const raw = Math.abs(Number($('bulkAmt').value || 0));
@@ -1163,7 +1361,8 @@ async function adminSettings() {
   await api('admin/settings', {
     minMult: $('smin').value, maxMult: $('smax').value,
     edge: $('sedge').value, greed: $('sgreed').value,
-    startCoins: 0, promoPool: $('spool').value
+    startCoins: 0, promoPool: $('spool').value,
+    starsPerTon: $('stonrate').value
   });
   toast('تنظیمات ذخیره شد');
   poll();
@@ -1180,9 +1379,10 @@ async function poll() {
   } catch {}
 }
 api('me').then(d => {
-  botUsername = d.botUsername || '';
+  botUsername = cleanBotName(d.botUsername || '');
   $('botun').textContent = '@' + (botUsername || '—');
   updateRefLink();
+  initTonConnect();
 });
 poll();
 setInterval(poll, 450);
