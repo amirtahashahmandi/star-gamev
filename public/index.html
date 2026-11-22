@@ -74,7 +74,7 @@ body{
 .grow{flex:1;min-width:0}
 .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lv{font-size:12px;color:var(--mut)}
-.bar{height:5px;background:rgba(255,255,255,.12);border-radius:9px;overflow:hidden;margin-top:4px}
+.bar{height:5px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin-top:4px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
 .coins{
   background:linear-gradient(135deg,rgba(0,152,234,.22),rgba(53,224,255,.16));
@@ -150,12 +150,13 @@ button.ghost{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16)
 }
 button.ghost:hover:not(:disabled){background:rgba(255,255,255,.14)}
-input,select{
+input,select,textarea{
   font:inherit;width:100%;padding:10px;border-radius:12px;
   border:1px solid rgba(155,190,255,.26);background:rgba(10,16,44,.42);
   color:var(--tx);text-align:center;transition:border-color .2s ease,box-shadow .2s ease
 }
-input:focus,select:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(53,224,255,.16)}
+textarea{text-align:right;resize:vertical;min-height:74px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(53,224,255,.16)}
 .row{display:flex;gap:8px}.row>*{flex:1}
 
 .ton-box{
@@ -231,8 +232,9 @@ input:focus,select:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 
 
 .mission-row{
   display:flex;justify-content:space-between;align-items:center;gap:8px;
-  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px
 }
+.mission-row:last-child{border-bottom:0}
 .mission-row button{padding:7px 11px;font-size:12px;flex:0 0 auto}
 .streak-pill{
   display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;
@@ -363,7 +365,7 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge">DUAL BET + SHIELD • زنده</span>
         <div style="font-size:19px;font-weight:900">🚀 بازی کرش (Crash)</div>
-        <small class="m">شرط دوگانه با TON و سپر ضد انفجار زیر 1.15x!</small>
+        <small class="m">ورود از 0.01 تا 50 TON • سپر ضد انفجار زیر 1.15x</small>
       </div>
       <div class="b-ico">🚀</div>
     </div>
@@ -372,33 +374,18 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge" style="background:rgba(255,201,77,.2);color:var(--gold);border-color:rgba(255,201,77,.4)">ARENA • رقابتی</span>
         <div style="font-size:19px;font-weight:900">⚔️ بازی آرنا (Arena)</div>
-        <small class="m">وارد میز TON شو، شانس بیشتری بساز و کل بانک را ببر!</small>
+        <small class="m">ورود از 0.01 تا 50 TON • کل بانک را ببر!</small>
       </div>
       <div class="b-ico">⚔️</div>
     </div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h3 style="margin:0">🔥 ماموریت روزانه و زنجیره برد</h3>
+        <h3 style="margin:0">🔥 ماموریت‌های TON و زنجیره برد</h3>
         <span class="streak-pill">⚡ برد متوالی: <b id="streakNow">0</b></span>
       </div>
       <small class="m" style="display:block;margin-bottom:8px">هر ۳ برد متوالی = جایزه TON • بودجه فعال بونوس: <b id="promoPoolTxt" style="color:var(--ok)">0 TON</b></small>
-
-      <div class="mission-row">
-        <div>
-          <div>۳ بار برداشت بالای <b>2.0x</b> در کرش</div>
-          <small class="m">پیشرفت: <span id="mCrashProg">0</span>/3 • جایزه: 0.015 TON</small>
-        </div>
-        <button id="mCrashBtn" onclick="claimMission('crash2x')">دریافت</button>
-      </div>
-
-      <div class="mission-row" style="border-bottom:0">
-        <div>
-          <div>۲ بار شرکت در بازی <b>آرنا</b></div>
-          <small class="m">پیشرفت: <span id="mArenaProg">0</span>/2 • جایزه: 0.015 TON</small>
-        </div>
-        <button id="mArenaBtn" onclick="claimMission('arena')">دریافت</button>
-      </div>
+      <div id="missionsBox"></div>
     </div>
 
     <div class="card">
@@ -417,13 +404,15 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card" style="margin-top:12px">
+      <small class="m" style="display:block;margin-bottom:8px">محدوده ورود به بازی: <b>0.01 TON</b> تا <b>50 TON</b></small>
+
       <div class="dual-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <b>🎯 پنل شرط ۱ (TON)</b>
           <small class="m" id="stA"></small>
         </div>
         <div class="row">
-          <input id="amtA" type="number" step="0.01" min="0.005" value="0.01" placeholder="مبلغ TON شرط ۱">
+          <input id="amtA" type="number" step="0.01" min="0.01" max="50" value="0.01" placeholder="مبلغ TON شرط ۱">
           <input id="autoA" type="number" step="0.1" value="1.6" placeholder="برداشت خودکار (مثلاً 1.6)">
         </div>
         <label class="shield-lbl">
@@ -444,7 +433,7 @@ small.m{color:var(--mut)}
           <small class="m" id="stB"></small>
         </div>
         <div class="row">
-          <input id="amtB" type="number" step="0.01" min="0.005" value="0.01" placeholder="مبلغ TON شرط ۲">
+          <input id="amtB" type="number" step="0.01" min="0.01" max="50" value="0.01" placeholder="مبلغ TON شرط ۲">
           <input id="autoB" type="number" step="0.1" placeholder="برداشت خودکار (مثلاً 3.0)">
         </div>
         <label class="shield-lbl">
@@ -517,7 +506,7 @@ small.m{color:var(--mut)}
           <button class="ghost" onclick="setDepTon(0.5)">0.5 TON</button>
         </div>
         <div class="row" style="margin-top:8px">
-          <input id="depTonAmt" type="number" step="0.01" min="0.01" value="0.1" placeholder="مقدار TON (حداقل 0.01)">
+          <input id="depTonAmt" type="number" step="0.01" min="0.01" max="50" value="0.1" placeholder="مقدار TON (0.01 تا 50)">
           <button class="ton" id="tonPayBtn" onclick="depositWithTonkeeper()">واریز با Tonkeeper</button>
         </div>
         <button class="ghost" style="width:100%;margin-top:8px" id="tonConnectBtn" onclick="connectTonWallet()">اتصال / تغییر کیف‌پول Tonkeeper</button>
@@ -591,6 +580,50 @@ small.m{color:var(--mut)}
   </div>
 
   <div class="page" id="p-admin">
+    <div class="card">
+      <h3>📢 ارسال پیام همگانی به همه کاربران</h3>
+      <small class="m" style="display:block;margin-bottom:8px">این پیام برای همه کاربران ربات در تلگرام ارسال می‌شود.</small>
+      <textarea id="broadcastText" placeholder="متن پیام همگانی را اینجا بنویسید..."></textarea>
+      <button class="ton" id="broadcastBtn" style="width:100%;margin-top:8px" onclick="adminBroadcast()">ارسال پیام به همه</button>
+      <div id="broadcastStatus" style="font-size:12px;color:var(--ok);margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3>🏦 تنظیم آدرس و ممو TON واریز</h3>
+      <input id="admTonAddr" type="text" placeholder="آدرس TON مقصد" style="direction:ltr;text-align:left;margin-bottom:8px">
+      <input id="admTonMemo" type="text" placeholder="ممو (Memo / Comment)" style="direction:ltr;text-align:left;margin-bottom:8px">
+      <button class="ton" style="width:100%" onclick="adminSaveTonConfig()">ذخیره آدرس و ممو TON</button>
+    </div>
+
+    <div class="card">
+      <h3>🎁 مدیریت بودجه بونوس (اضافه / کم کردن TON)</h3>
+      <small class="m" style="display:block;margin-bottom:8px">بودجه فعلی بونوس: <b id="admBonusPool" style="color:var(--ok)">0 TON</b></small>
+      <input id="admBonusDelta" type="number" step="0.01" placeholder="مقدار TON بونوس (مثلاً 0.5 یا -0.2)">
+      <div class="row" style="margin-top:8px">
+        <button class="g" onclick="adminBonusDelta(1)">+ اضافه به بونوس</button>
+        <button class="r" onclick="adminBonusDelta(-1)">- کم کردن از بونوس</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🎯 مدیریت ماموریت‌ها (افزودن / حذف / فعال‌سازی)</h3>
+      <input id="mTitle" type="text" placeholder="عنوان ماموریت (مثلاً: دعوت ۱۲ عضو جدید)" style="margin-bottom:8px">
+      <div class="row" style="margin-bottom:8px">
+        <select id="mType">
+          <option value="referral">دعوت عضو (Referral)</option>
+          <option value="crash_streak_4x">برد متوالی ضریب بالا کرش</option>
+          <option value="arena_streak">ورود به آرنا + برد متوالی</option>
+        </select>
+        <input id="mTarget" type="number" min="1" step="1" placeholder="هدف (مثلاً 12)">
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <input id="mReward" type="number" min="0.001" step="0.01" placeholder="جایزه TON (مثلاً 0.1)">
+        <input id="mMinStreak" type="number" min="0" step="1" placeholder="حداقل برد متوالی (مثلاً 3)">
+      </div>
+      <button class="g" style="width:100%;margin-bottom:10px" onclick="adminAddMission()">افزودن ماموریت جدید</button>
+      <div id="amissionsList"></div>
+    </div>
+
     <div class="card">
       <h3>💰 شارژ / مدیریت کاربر (با آیدی عددی یا @یوزرنیم)</h3>
       <input id="aid" placeholder="آیدی عددی یا @username کاربر">
@@ -799,7 +832,7 @@ function reopenTonkeeperLink() {
 }
 async function depositWithTonkeeper() {
   const tonAmount = Number($('depTonAmt').value || 0);
-  if (!isFinite(tonAmount) || tonAmount < 0.01) return toast('حداقل واریز 0.01 TON است');
+  if (!isFinite(tonAmount) || tonAmount < 0.01 || tonAmount > 50) return toast('مبلغ واریز باید بین 0.01 تا 50 TON باشد');
   try {
     const prep = await api('ton/prepare', {
       tonAmount,
@@ -910,25 +943,35 @@ function openSupportBot() {
 function renderMissionsAndStreak(u) {
   $('streakNow').textContent = u.streak || 0;
   $('promoPoolTxt').textContent = fmt(u.promoPool ?? 0) + ' TON';
-  const m = u.missions || {};
-  const cProg = Math.min(3, m.crash2x || 0);
-  const aProg = Math.min(2, m.arenaPlays || 0);
-  $('mCrashProg').textContent = cProg;
-  $('mArenaProg').textContent = aProg;
-
-  const cb = $('mCrashBtn');
-  if (m.claimedCrash2x) { cb.textContent = 'دریافت شده ✅'; cb.disabled = true; cb.className = 'ghost'; }
-  else if (cProg >= 3) { cb.textContent = 'دریافت 0.015 TON'; cb.disabled = false; cb.className = 'g'; }
-  else { cb.textContent = `${cProg}/3`; cb.disabled = true; cb.className = 'ghost'; }
-
-  const ab = $('mArenaBtn');
-  if (m.claimedArena) { ab.textContent = 'دریافت شده ✅'; ab.disabled = true; ab.className = 'ghost'; }
-  else if (aProg >= 2) { ab.textContent = 'دریافت 0.015 TON'; ab.disabled = false; ab.className = 'g'; }
-  else { ab.textContent = `${aProg}/2`; ab.disabled = true; ab.className = 'ghost'; }
+  const list = u.missions || [];
+  if (!list.length) {
+    $('missionsBox').innerHTML = '<small class="m">ماموریت فعالی ثبت نشده است</small>';
+    return;
+  }
+  $('missionsBox').innerHTML = list.map(m => {
+    const prog = Math.min(m.target, m.progress || 0);
+    const streakReqTxt = m.minStreak > 0 ? ` • حداقل برد متوالی: ${m.minStreak}` : '';
+    let btnHtml = '';
+    if (m.claimed) {
+      btnHtml = `<button class="ghost" disabled>دریافت شد ✅</button>`;
+    } else if (m.claimable) {
+      btnHtml = `<button class="g" onclick="claimMission('${m.id}')">دریافت ${fmt(m.reward)} TON</button>`;
+    } else {
+      btnHtml = `<button class="ghost" disabled>${prog}/${m.target}</button>`;
+    }
+    return `<div class="mission-row">
+      <div>
+        <div><b>${m.title}</b></div>
+        <small class="m">پیشرفت: ${prog}/${m.target}${streakReqTxt} • جایزه: <b>${fmt(m.reward)} TON</b></small>
+      </div>
+      ${btnHtml}
+    </div>`;
+  }).join('');
 }
-async function claimMission(mission) {
+
+async function claimMission(missionId) {
   try {
-    const r = await api('mission/claim', { mission });
+    const r = await api('mission/claim', { mission: missionId });
     beep(860, 0.14);
     toast(`🎁 ${fmt(r.reward)} TON پاداش ماموریت دریافت شد!`);
     poll();
@@ -972,18 +1015,23 @@ const cv = $('cv'), cx = cv.getContext('2d'); let syncT = 0;
 function qSlot(slot, f) {
   const id = slot === 'a' ? 'amtA' : 'amtB';
   const cur = Number($(id).value || 0.01);
-  $(id).value = Math.max(0.005, Math.round(cur * f * 1000) / 1000);
+  const next = Math.min(50, Math.max(0.01, Math.round(cur * f * 1000) / 1000));
+  $(id).value = next;
 }
 function qaSlot(slot) {
   const id = slot === 'a' ? 'amtA' : 'amtB';
-  $(id).value = Math.max(0.005, Number((me ? me.coins : 0.01).toFixed(4)));
+  const val = Math.min(50, Math.max(0.01, Number((me ? me.coins : 0.01).toFixed(4))));
+  $(id).value = val;
 }
 async function slotAct(slot) {
   const c = st.crash;
   const sObj = c.my && c.my[slot];
-  const amt = $(slot === 'a' ? 'amtA' : 'amtB').value;
+  const amt = Number($(slot === 'a' ? 'amtA' : 'amtB').value);
   const auto = $(slot === 'a' ? 'autoA' : 'autoB').value;
   const shield = $(slot === 'a' ? 'shA' : 'shB').checked;
+  if (c.phase === 'bet' && !sObj && (!(amt >= 0.01 && amt <= 50))) {
+    return toast('مبلغ شرط باید بین 0.01 تا 50 TON باشد');
+  }
   try {
     if (c.phase === 'bet' && !sObj) {
       await api('crash/bet', { slot, amount: amt, auto, shield });
@@ -1120,7 +1168,7 @@ function renderArena() {
     <div class="card" style="text-align:center">
       <div style="font-size:12px;color:var(--mut)">مجموع بانک (BANK)</div>
       <div style="font-size:28px;font-weight:900;color:var(--acc2)">💎 ${fmt(totalBank)} TON</div>
-      <small class="m">جایزه برنده: ${fmt(prize)} TON • حداقل ۲ نفر</small>
+      <small class="m">جایزه برنده: ${fmt(prize)} TON • حداقل ۲ نفر (0.01 تا 50 TON)</small>
 
       <div class="arena-ring-wrap">
         <canvas id="arenaCv" width="380" height="380"></canvas>
@@ -1170,9 +1218,7 @@ async function joinA(e) {
   try { await api('arena/join', { entry: e }); beep(660, 0.1); toast('وارد آرنا شدید'); poll(); } catch {}
 }
 
-// Wheel segments display 0.01, 0.02, 0.1 TON; random draw is strictly 0.01 (99%) and 0.1 (1%)
 const SEG = [0.01, 0.02, 0.01, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02];
-const COL = ['#35e0ff', '#ffc94d', '#7c5cff'];
 let rot = 0;
 function drawWheel() {
   const c = $('wheel'), x = c.getContext('2d'), n = SEG.length, a = 2 * Math.PI / n;
@@ -1271,7 +1317,25 @@ async function loadAdmin() {
   $('smin').value = s.minMult; $('smax').value = s.maxMult;
   $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
   $('spool').value = d.promoPool ?? 0;
+  $('admBonusPool').textContent = fmt(d.promoPool ?? 0) + ' TON';
   $('aq').value = s.queue.join(' ');
+  if (d.tonDeposit) {
+    $('admTonAddr').value = d.tonDeposit.address || '';
+    $('admTonMemo').value = d.tonDeposit.memo || '';
+  }
+
+  $('amissionsList').innerHTML = (d.missionsConfig || []).map(m => `
+    <div class="mission-row">
+      <div>
+        <div><b>${m.title}</b> ${m.enabled === false ? '<span class="pill-bad">(غیرفعال)</span>' : '<span class="pill-ok">(فعال)</span>'}</div>
+        <small class="m">نوع: ${m.type} • هدف: ${m.target} • جایزه: ${fmt(m.reward)} TON${m.minStreak ? ` • برد متوالی: ${m.minStreak}` : ''}</small>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="ghost" style="padding:6px 9px;font-size:11px" onclick="adminToggleMission('${m.id}')">${m.enabled === false ? 'فعال' : 'توقف'}</button>
+        <button class="r" style="padding:6px 9px;font-size:11px" onclick="adminRemoveMission('${m.id}')">حذف</button>
+      </div>
+    </div>
+  `).join('') || '<small class="m">ماموریتی وجود ندارد</small>';
 
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
   $('awithdrawals').innerHTML = pending.map(w => `
@@ -1294,6 +1358,77 @@ async function loadAdmin() {
     </div>
   `).join('');
 }
+
+async function adminBroadcast() {
+  const text = $('broadcastText').value.trim();
+  if (!text) return toast('متن پیام همگانی را وارد کنید');
+  const btn = $('broadcastBtn');
+  btn.disabled = true;
+  btn.textContent = 'در حال ارسال...';
+  try {
+    const r = await api('admin/broadcast', { text });
+    $('broadcastText').value = '';
+    $('broadcastStatus').textContent = `✅ ارسال شد به ${r.sent} نفر از ${r.total} کاربر${r.failed ? ` (${r.failed} ناموفق)` : ''}`;
+    toast(`✅ پیام به ${r.sent} کاربر ارسال شد`);
+  } catch {}
+  btn.disabled = false;
+  btn.textContent = 'ارسال پیام به همه';
+}
+
+async function adminSaveTonConfig() {
+  const address = $('admTonAddr').value.trim();
+  const memo = $('admTonMemo').value.trim();
+  await api('admin/ton_config', { address, memo });
+  toast('✅ آدرس و ممو TON ذخیره شد');
+  loadAdmin();
+  poll();
+}
+
+async function adminBonusDelta(sign) {
+  const raw = Math.abs(Number($('admBonusDelta').value || 0));
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
+  const r = await api('admin/bonus', { delta: sign * raw });
+  $('admBonusDelta').value = '';
+  toast(`بودجه بونوس: ${fmt(r.promoPool)} TON`);
+  loadAdmin();
+  poll();
+}
+
+async function adminAddMission() {
+  const title = $('mTitle').value.trim();
+  const type = $('mType').value;
+  const target = Number($('mTarget').value || 1);
+  const reward = Number($('mReward').value || 0.01);
+  const minStreak = Number($('mMinStreak').value || 0);
+  if (!title) return toast('عنوان ماموریت را وارد کنید');
+  await api('admin/mission_add', {
+    title, type, target, reward, minStreak,
+    minStake: type === 'crash_streak_4x' ? 0.1 : 0,
+    minMult: type === 'crash_streak_4x' ? 4.0 : 0
+  });
+  $('mTitle').value = '';
+  $('mTarget').value = '';
+  $('mReward').value = '';
+  $('mMinStreak').value = '';
+  toast('✅ ماموریت جدید اضافه شد');
+  loadAdmin();
+  poll();
+}
+
+async function adminToggleMission(id) {
+  await api('admin/mission_toggle', { id });
+  toast('وضعیت ماموریت تغییر کرد');
+  loadAdmin();
+  poll();
+}
+
+async function adminRemoveMission(id) {
+  await api('admin/mission_remove', { id });
+  toast('ماموریت حذف شد');
+  loadAdmin();
+  poll();
+}
+
 function showAdminUser(uid) {
   if (!adminCache) return;
   const u = adminCache.users.find(x => x.id === uid);

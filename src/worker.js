@@ -1,8 +1,11 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.2)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
 const ARENA_TIERS = [0.1, 0.5, 2], FEE = 0.05, ARENA_WAIT = 20000;
+
+const MIN_BET = 0.01;
+const MAX_BET = 50;
 
 // Wheel probabilities: 0.01 TON -> 99%, 0.1 TON -> 1%, 0.02 TON -> shown on wheel (0% random draw)
 const WHEEL = [
@@ -14,9 +17,66 @@ const WHEEL = [
 const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.15, SHIELD_REFUND = 0.50;
 const STREAK_MILESTONE = 3, STREAK_REWARD = 0.015;
 
-// Tonkeeper Deposit Config (Verified On-Chain)
-const TON_DEPOSIT_ADDR = 'EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu';
-const TON_DEPOSIT_MEMO = '398101056984149';
+// Default Tonkeeper Deposit Config (editable in Admin Panel)
+const DEFAULT_TON_DEPOSIT_ADDR = 'EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu';
+const DEFAULT_TON_DEPOSIT_MEMO = '398101056984149';
+
+function defaultMissionsConfig() {
+  return [
+    {
+      id: 'ref_3',
+      type: 'referral',
+      title: 'دعوت ۳ عضو جدید',
+      desc: '۳ دوست را با لینک دعوت وارد ربات کنید',
+      target: 3,
+      reward: 0.01,
+      minStreak: 0,
+      enabled: true
+    },
+    {
+      id: 'ref_5',
+      type: 'referral',
+      title: 'دعوت ۵ عضو جدید',
+      desc: '۵ دوست را با لینک دعوت وارد ربات کنید',
+      target: 5,
+      reward: 0.04,
+      minStreak: 0,
+      enabled: true
+    },
+    {
+      id: 'ref_9',
+      type: 'referral',
+      title: 'دعوت ۹ عضو جدید',
+      desc: '۹ دوست را با لینک دعوت وارد ربات کنید',
+      target: 9,
+      reward: 0.09,
+      minStreak: 0,
+      enabled: true
+    },
+    {
+      id: 'crash_streak_4x',
+      type: 'crash_streak_4x',
+      title: '۵ برد متوالی ضریب بالای 4x (شرط ≥ 0.1 TON)',
+      desc: '۵ برد پیاپی در کرش با ضریب بالای 4x و حداقل شرط 0.1 TON',
+      target: 5,
+      minStake: 0.1,
+      minMult: 4.0,
+      reward: 0.1,
+      minStreak: 0,
+      enabled: true
+    },
+    {
+      id: 'arena_7_streak_3',
+      type: 'arena_streak',
+      title: '۷ بار ورود به آرنا + حداقل ۳ برد متوالی',
+      desc: '۷ بار در آرنا شرکت کنید و حداقل ۳ برد متوالی داشته باشید',
+      target: 7,
+      minStreak: 3,
+      reward: 0.05,
+      enabled: true
+    }
+  ];
+}
 
 const levelOf = xp => { let l = 0; LEVELS.forEach((t, i) => { if (xp >= t) l = i + 1; }); return l; };
 const r4 = n => Math.round(Number(n || 0) * 10000) / 10000;
@@ -94,7 +154,9 @@ export class Game {
     const s = this.state.storage;
     this.meta = (await s.get('meta')) || {
       settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0 },
-      promoPool: 0.25,
+      tonDeposit: { address: DEFAULT_TON_DEPOSIT_ADDR, memo: DEFAULT_TON_DEPOSIT_MEMO },
+      missionsConfig: defaultMissionsConfig(),
+      promoPool: 1.0,
       history: [],
       crash: null,
       arenas: null,
@@ -104,7 +166,13 @@ export class Game {
     };
     this.meta.settings.startCoins = 0;
     if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.42;
-    if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 0.25;
+    if (!this.meta.tonDeposit || !this.meta.tonDeposit.address) {
+      this.meta.tonDeposit = { address: DEFAULT_TON_DEPOSIT_ADDR, memo: DEFAULT_TON_DEPOSIT_MEMO };
+    }
+    if (!Array.isArray(this.meta.missionsConfig) || this.meta.missionsConfig.length === 0) {
+      this.meta.missionsConfig = defaultMissionsConfig();
+    }
+    if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 1.0;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
     if (!Array.isArray(this.meta.usedTonTxs)) this.meta.usedTonTxs = [];
     if (!Array.isArray(this.meta.tonOrders)) this.meta.tonOrders = [];
@@ -124,7 +192,9 @@ export class Game {
       if (!u.refEarned) u.refEarned = 0;
       if (!u.streak) u.streak = 0;
       if (!u.bestStreak) u.bestStreak = 0;
-      if (!u.missions) u.missions = { dayKey: '', crash2x: 0, arenaPlays: 0, claimedCrash2x: false, claimedArena: false };
+      if (!u.arenaEntries) u.arenaEntries = 0;
+      if (!u.highMultStreak) u.highMultStreak = 0;
+      if (!Array.isArray(u.claimedMissions)) u.claimedMissions = [];
       this.users[k.slice(2)] = u;
     }
     this.dU = new Set(); this.dM = false;
@@ -144,16 +214,6 @@ export class Game {
     }
   }
 
-  dayKey(ts = Date.now()) {
-    return new Date(ts).toISOString().slice(0, 10);
-  }
-  ensureMissions(u) {
-    const dk = this.dayKey();
-    if (!u.missions || u.missions.dayKey !== dk) {
-      u.missions = { dayKey: dk, crash2x: 0, arenaPlays: 0, claimedCrash2x: false, claimedArena: false };
-      this.touch(u);
-    }
-  }
   fundPromoPool(amount) {
     const add = r4(Math.max(0, amount));
     if (add > 0) {
@@ -174,6 +234,29 @@ export class Game {
     this.touch(u);
     this.saveMeta();
     return granted;
+  }
+
+  missionProgress(u, m) {
+    if (m.type === 'referral') {
+      return Number(u.refCount || 0);
+    }
+    if (m.type === 'crash_streak_4x') {
+      return Number(u.highMultStreak || 0);
+    }
+    if (m.type === 'arena_streak') {
+      return Number(u.arenaEntries || 0);
+    }
+    return 0;
+  }
+
+  isMissionClaimable(u, m) {
+    if (!m || m.enabled === false) return false;
+    if ((u.claimedMissions || []).includes(m.id)) return false;
+    const prog = this.missionProgress(u, m);
+    const target = Number(m.target || 1);
+    const minStreak = Number(m.minStreak || 0);
+    const curStreak = Math.max(Number(u.streak || 0), Number(u.bestStreak || 0));
+    return prog >= target && curStreak >= minStreak;
   }
 
   addTx(u, type, amount, note, status = 'completed') {
@@ -219,7 +302,9 @@ export class Game {
   async verifyIncomingTonTx(order) {
     const headers = { accept: 'application/json' };
     if (this.env.TONCENTER_API_KEY) headers['X-API-Key'] = this.env.TONCENTER_API_KEY;
-    const apiUrl = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(TON_DEPOSIT_ADDR)}&limit=35&archival=false`;
+    const depAddr = this.meta.tonDeposit?.address || DEFAULT_TON_DEPOSIT_ADDR;
+    const expectedMemo = String(this.meta.tonDeposit?.memo || DEFAULT_TON_DEPOSIT_MEMO).trim();
+    const apiUrl = `https://toncenter.com/api/v2/getTransactions?address=${encodeURIComponent(depAddr)}&limit=35&archival=false`;
     const res = await fetch(apiUrl, { headers });
     if (!res.ok) return { ok: false, reason: 'خطا در ارتباط با شبکه TON برای استعلام تراکنش' };
     const data = await res.json().catch(() => null);
@@ -229,7 +314,6 @@ export class Game {
 
     const minNano = BigInt(Math.floor(Number(order.tonAmount) * 1e9 * 0.985));
     const minUtime = Math.floor((order.created - 120000) / 1000);
-    const expectedMemo = TON_DEPOSIT_MEMO;
 
     for (const tx of data.result) {
       const txHash = tx?.transaction_id?.hash;
@@ -268,11 +352,10 @@ export class Game {
         games: 0, bestMult: 0, lastWheel: 0, lastTag: 0, banned: false, created: Date.now(),
         name: '', username: '', photo: '', txs: [], gameLogs: [],
         refBy: '', refCount: 0, refEarned: 0, streak: 0, bestStreak: 0,
-        missions: { dayKey: this.dayKey(), crash2x: 0, arenaPlays: 0, claimedCrash2x: false, claimedArena: false }
+        arenaEntries: 0, highMultStreak: 0, claimedMissions: []
       };
       this.touch(u);
     }
-    this.ensureMissions(u);
     const name = [tg.first_name, tg.last_name].filter(Boolean).join(' ') || tg.username || id;
     const uname = tg.username || '';
     if (u.name !== name || u.username !== uname || (tg.photo_url && u.photo !== tg.photo_url)) {
@@ -290,23 +373,48 @@ export class Game {
     }
     return u;
   }
+
   pub(u) {
-    this.ensureMissions(u);
     const rawBot = String(this.env.BOT_USERNAME || '').trim().replace(/^@+/, '');
+    const activeMissions = (this.meta.missionsConfig || [])
+      .filter(m => m.enabled !== false)
+      .map(m => {
+        const prog = this.missionProgress(u, m);
+        const claimed = (u.claimedMissions || []).includes(m.id);
+        const claimable = this.isMissionClaimable(u, m);
+        return {
+          id: m.id,
+          type: m.type,
+          title: m.title,
+          desc: m.desc || '',
+          target: Number(m.target || 1),
+          minStake: Number(m.minStake || 0),
+          minMult: Number(m.minMult || 0),
+          minStreak: Number(m.minStreak || 0),
+          reward: r4(m.reward || 0),
+          progress: prog,
+          claimed,
+          claimable
+        };
+      });
+
     return {
       id: u.id, name: u.name, username: u.username, photo: u.photo,
       coins: r4(u.coins), xp: u.xp, level: levelOf(u.xp),
       wagered: r4(u.wagered), won: r4(u.won), wins: u.wins, games: u.games, bestMult: u.bestMult,
       streak: u.streak || 0, bestStreak: u.bestStreak || 0,
-      missions: u.missions,
+      arenaEntries: u.arenaEntries || 0,
+      highMultStreak: u.highMultStreak || 0,
+      missions: activeMissions,
       promoPool: r4(this.meta.promoPool || 0),
+      limits: { minBet: MIN_BET, maxBet: MAX_BET },
       wheelIn: Math.max(0, u.lastWheel + DAY - Date.now()),
       tagIn: Math.max(0, u.lastTag + DAY - Date.now()),
       isAdmin: u.id === String(this.env.ADMIN_ID),
       botUsername: rawBot,
       tonDeposit: {
-        address: TON_DEPOSIT_ADDR,
-        memo: TON_DEPOSIT_MEMO
+        address: this.meta.tonDeposit?.address || DEFAULT_TON_DEPOSIT_ADDR,
+        memo: this.meta.tonDeposit?.memo || DEFAULT_TON_DEPOSIT_MEMO
       },
       refCount: u.refCount || 0,
       refEarned: r4(u.refEarned || 0),
@@ -315,6 +423,7 @@ export class Game {
       withdrawals: this.meta.withdrawals.filter(w => w.uid === u.id).slice(0, 20)
     };
   }
+
   addXp(u, a) { u.xp += Math.max(1, Math.floor(Number(a || 1) * 20)); }
   async tg(method, body) {
     if (!this.env.BOT_TOKEN) return null;
@@ -367,6 +476,10 @@ export class Game {
       u.streak = 0;
       this.touch(u);
     }
+    if (u.highMultStreak) {
+      u.highMultStreak = 0;
+      this.touch(u);
+    }
   }
 
   settleCrashSlot(u, slot, mult, slotLabel) {
@@ -378,10 +491,13 @@ export class Game {
     u.won = r4(u.won + win);
     u.wins += 1;
     u.bestMult = Math.max(u.bestMult, slot.cashed);
-    this.ensureMissions(u);
-    if (slot.cashed >= 2.0 && u.missions.crash2x < 3) {
-      u.missions.crash2x += 1;
+
+    if (slot.amount >= 0.1 && slot.cashed > 4.0) {
+      u.highMultStreak = (u.highMultStreak || 0) + 1;
+    } else {
+      u.highMultStreak = 0;
     }
+
     this.recordWinStreak(u);
     this.addXp(u, slot.amount * 2 + 0.1);
     this.addGameLog(u, 'crash', `برد ${slotLabel} در ضریب ${slot.cashed}x (شرط ${fmtTon(slot.amount)} TON)`, profit);
@@ -687,7 +803,9 @@ export class Game {
         const amt = r4(body.amount);
         const useShield = !!body.shield;
         if (c.phase !== 'bet') return bad('ثبت شرط بسته است');
-        if (!(isFinite(amt) && amt >= 0.005 && amt <= 1000)) return bad('حداقل مبلغ شرط 0.005 TON است');
+        if (!(isFinite(amt) && amt >= MIN_BET && amt <= MAX_BET)) {
+          return bad(`مبلغ شرط باید بین ${fmtTon(MIN_BET)} تا ${fmtTon(MAX_BET)} TON باشد`);
+        }
         const shieldFee = useShield ? r4(amt * SHIELD_RATE) : 0;
         const totalCost = r4(amt + shieldFee);
         if (totalCost > r4(u.coins + 1e-9)) return bad('موجودی TON برای شرط و سپر کافی نیست');
@@ -729,39 +847,34 @@ export class Game {
       }
 
       case 'POST /api/mission/claim': {
-        this.ensureMissions(u);
         const mid = String(body.mission || '');
-        if (mid === 'crash2x') {
-          if (u.missions.claimedCrash2x) return bad('قبلاً دریافت شده است');
-          if (u.missions.crash2x < 3) return bad('هنوز ماموریت ۳ برد بالای ۲x کامل نشده');
-          const paid = this.payoutFromPool(u, 0.015, 'جایزه ماموریت روزانه: ۳ برد بالای 2x در کرش');
-          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده است');
-          u.missions.claimedCrash2x = true;
-          this.touch(u);
-          return json(200, { ok: true, reward: paid });
+        const m = (this.meta.missionsConfig || []).find(x => x.id === mid && x.enabled !== false);
+        if (!m) return bad('ماموریت یافت نشد یا غیرفعال است');
+        if ((u.claimedMissions || []).includes(m.id)) return bad('این ماموریت قبلاً دریافت شده است');
+        if (!this.isMissionClaimable(u, m)) {
+          return bad('شرایط تکمیل این ماموریت هنوز فراهم نشده است');
         }
-        if (mid === 'arena') {
-          if (u.missions.claimedArena) return bad('قبلاً دریافت شده است');
-          if (u.missions.arenaPlays < 2) return bad('هنوز ۲ دور آرنا بازی نکرده‌اید');
-          const paid = this.payoutFromPool(u, 0.015, 'جایزه ماموریت روزانه: ۲ شرکت در آرنا');
-          if (paid <= 0) return bad('بودجه بونوس امروز تمام شده است');
-          u.missions.claimedArena = true;
-          this.touch(u);
-          return json(200, { ok: true, reward: paid });
-        }
-        return bad('ماموریت نامعتبر');
+        const paid = this.payoutFromPool(u, m.reward, `جایزه ماموریت: ${m.title}`);
+        if (paid <= 0) return bad('بودجه بونوس فعلاً تکمیل شده است');
+        u.claimedMissions = [...(u.claimedMissions || []), m.id];
+        this.addXp(u, 0.5);
+        this.addGameLog(u, 'mission', m.title, paid);
+        this.touch(u);
+        return json(200, { ok: true, reward: paid });
       }
 
       case 'POST /api/arena/join': {
         const a = this.meta.arenas[Number(body.entry)];
         if (!a) return bad('نامعتبر');
+        if (!(a.entry >= MIN_BET && a.entry <= MAX_BET)) {
+          return bad(`ورودی آرنا باید بین ${fmtTon(MIN_BET)} تا ${fmtTon(MAX_BET)} TON باشد`);
+        }
         if (a.players.some(p => p.id === u.id)) return bad('قبلاً وارد شده‌اید');
         if (a.endAt && a.endAt - now < 1200) return bad('دور در حال پایان است');
         if (r4(u.coins) < a.entry) return bad('موجودی TON کافی نیست');
-        this.ensureMissions(u);
         u.coins = Math.max(0, r4(u.coins - a.entry));
         u.wagered = r4(u.wagered + a.entry);
-        if (u.missions.arenaPlays < 2) u.missions.arenaPlays += 1;
+        u.arenaEntries = (u.arenaEntries || 0) + 1;
         a.players.push({ id: u.id, name: u.name });
         this.addTx(u, 'admin_sub', -a.entry, `ورودی آرنا ${fmtTon(a.entry)} TON`);
         this.rewardReferrer(u, a.entry, 0.005, 'پاداش ۰.۵٪ بازی آرنا زیرمجموعه');
@@ -773,9 +886,12 @@ export class Game {
       case 'POST /api/ton/prepare': {
         const tonAmount = r4(body.tonAmount);
         const senderAddress = String(body.senderAddress || '').trim();
-        if (!isFinite(tonAmount) || tonAmount < 0.01 || tonAmount > 10000) return bad('حداقل واریز 0.01 TON است');
+        if (!isFinite(tonAmount) || tonAmount < MIN_BET || tonAmount > MAX_BET) {
+          return bad(`مبلغ واریز باید بین ${fmtTon(MIN_BET)} تا ${fmtTon(MAX_BET)} TON باشد`);
+        }
+        const depAddr = this.meta.tonDeposit?.address || DEFAULT_TON_DEPOSIT_ADDR;
+        const fullMemo = String(this.meta.tonDeposit?.memo || DEFAULT_TON_DEPOSIT_MEMO).trim();
         const nanoAmount = String(Math.round(tonAmount * 1e9));
-        const fullMemo = TON_DEPOSIT_MEMO;
         const payloadBoc = textCommentToBocBase64(fullMemo);
         const orderId = 'ton_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
         const order = {
@@ -783,7 +899,7 @@ export class Game {
           uid: u.id,
           tonAmount,
           nanoAmount,
-          address: TON_DEPOSIT_ADDR,
+          address: depAddr,
           fullMemo,
           senderAddress,
           status: 'pending',
@@ -793,13 +909,13 @@ export class Game {
         this.meta.tonOrders = this.meta.tonOrders.slice(0, 250);
         this.saveMeta();
 
-        const tonkeeperUniversal = `https://app.tonkeeper.com/transfer/${TON_DEPOSIT_ADDR}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
-        const tonDeepLink = `ton://transfer/${TON_DEPOSIT_ADDR}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
+        const tonkeeperUniversal = `https://app.tonkeeper.com/transfer/${depAddr}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
+        const tonDeepLink = `ton://transfer/${depAddr}?amount=${nanoAmount}&text=${encodeURIComponent(fullMemo)}`;
 
         return json(200, {
           ok: true,
           orderId,
-          address: TON_DEPOSIT_ADDR,
+          address: depAddr,
           memo: fullMemo,
           tonAmount,
           nanoAmount,
@@ -893,7 +1009,6 @@ export class Game {
 
       case 'POST /api/wheel': {
         if (now < u.lastWheel + DAY) return bad('هنوز زمان چرخش نرسیده');
-        // Exact odds: 0.01 TON -> 99%, 0.1 TON -> 1%
         const v = Math.random() < 0.99 ? 0.01 : 0.1;
         const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${fmtTon(v)} TON)`);
         if (paid <= 0) return bad('بودجه جایزه روزانه فعلاً تکمیل شده است');
@@ -933,12 +1048,34 @@ export class Game {
             id: x.id, name: x.name, username: x.username, coins: r4(x.coins),
             refCount: x.refCount || 0, refEarned: r4(x.refEarned || 0),
             streak: x.streak || 0, bestStreak: x.bestStreak || 0,
+            arenaEntries: x.arenaEntries || 0, highMultStreak: x.highMultStreak || 0,
             banned: x.banned, txs: (x.txs || []).slice(0, 20), gameLogs: (x.gameLogs || []).slice(0, 20)
           })),
           withdrawals: this.meta.withdrawals.slice(0, 100),
           promoPool: r4(this.meta.promoPool || 0),
+          tonDeposit: {
+            address: this.meta.tonDeposit?.address || DEFAULT_TON_DEPOSIT_ADDR,
+            memo: this.meta.tonDeposit?.memo || DEFAULT_TON_DEPOSIT_MEMO
+          },
+          missionsConfig: this.meta.missionsConfig || [],
           settings: { ...S, startCoins: 0 }
         });
+
+      case 'POST /api/admin/broadcast': {
+        const text = String(body.text || '').trim();
+        if (!text) return bad('متن پیام همگانی را وارد کنید');
+        const targets = Object.values(this.users).filter(x => !x.banned && x.id);
+        let sent = 0, failed = 0;
+        for (const target of targets) {
+          const res = await this.tg('sendMessage', {
+            chat_id: target.id,
+            text: `📢 اطلاعیه Tonia:\n${text}`
+          });
+          if (res) sent++;
+          else failed++;
+        }
+        return json(200, { ok: true, sent, failed, total: targets.length });
+      }
 
       case 'POST /api/admin/coins': {
         const t = this.findUserByQuery(body.id), amt = r4(body.amount);
@@ -975,6 +1112,68 @@ export class Game {
           count++;
         }
         return json(200, { ok: true, updatedCount: count, delta: amt });
+      }
+
+      case 'POST /api/admin/bonus': {
+        const delta = r4(body.delta);
+        if (!isFinite(delta) || delta === 0) return bad('مقدار تغییر بونوس نامعتبر است');
+        this.meta.promoPool = Math.max(0, r4((this.meta.promoPool || 0) + delta));
+        this.saveMeta();
+        return json(200, { ok: true, promoPool: this.meta.promoPool });
+      }
+
+      case 'POST /api/admin/ton_config': {
+        const address = String(body.address || '').trim();
+        const memo = String(body.memo || '').trim();
+        if (!address || address.length < 10) return bad('آدرس TON معتبر وارد کنید');
+        if (!memo) return bad('ممو (Memo) معتبر وارد کنید');
+        this.meta.tonDeposit = { address, memo };
+        this.saveMeta();
+        return json(200, { ok: true, tonDeposit: this.meta.tonDeposit });
+      }
+
+      case 'POST /api/admin/mission_add': {
+        const title = String(body.title || '').trim();
+        const type = ['referral', 'crash_streak_4x', 'arena_streak'].includes(body.type) ? body.type : 'referral';
+        const target = Math.max(1, Math.floor(Number(body.target || 1)));
+        const reward = r4(Number(body.reward || 0.01));
+        const minStreak = Math.max(0, Math.floor(Number(body.minStreak || 0)));
+        const minStake = r4(Math.max(0, Number(body.minStake || 0)));
+        const minMult = Number(Math.max(0, Number(body.minMult || 0)));
+        if (!title) return bad('عنوان ماموریت را وارد کنید');
+        if (!isFinite(reward) || reward <= 0) return bad('مبلغ جایزه TON باید بزرگ‌تر از صفر باشد');
+        const newM = {
+          id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+          type,
+          title,
+          desc: String(body.desc || title).trim(),
+          target,
+          minStake,
+          minMult,
+          minStreak,
+          reward,
+          enabled: true
+        };
+        this.meta.missionsConfig = [...(this.meta.missionsConfig || []), newM];
+        this.saveMeta();
+        return json(200, { ok: true, mission: newM, missionsConfig: this.meta.missionsConfig });
+      }
+
+      case 'POST /api/admin/mission_remove': {
+        const mid = String(body.id || '').trim();
+        if (!mid) return bad('شناسه ماموریت نامعتبر است');
+        this.meta.missionsConfig = (this.meta.missionsConfig || []).filter(m => m.id !== mid);
+        this.saveMeta();
+        return json(200, { ok: true, missionsConfig: this.meta.missionsConfig });
+      }
+
+      case 'POST /api/admin/mission_toggle': {
+        const mid = String(body.id || '').trim();
+        const m = (this.meta.missionsConfig || []).find(x => x.id === mid);
+        if (!m) return bad('ماموریت یافت نشد');
+        m.enabled = m.enabled === false ? true : false;
+        this.saveMeta();
+        return json(200, { ok: true, mission: m });
       }
 
       case 'POST /api/admin/withdraw': {
