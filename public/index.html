@@ -12,7 +12,7 @@
   --glass:rgba(20,30,74,.26);
   --glass-hi:rgba(36,52,122,.34);
   --line:rgba(155,190,255,.32);
-  --acc:#7c5cff;--acc2:#35e0ff;--gold:#ffc94d;--ok:#3ddc97;--bad:#ff5d7a;
+  --acc:#7c5cff;--acc2:#35e0ff;--gold:#ffc94d;--ok:#3ddc97;--bad:#ff5d7a;--pink:#ff9ec7;
   --tx:#f4f7ff;--mut:#a9b6eb
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -173,7 +173,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);bo
 }
 
 #stage{
-  position:relative;height:215px;border-radius:20px;overflow:hidden;
+  position:relative;height:230px;border-radius:20px;overflow:hidden;
   background:radial-gradient(circle at 50% 115%,rgba(124,92,255,.35),rgba(10,16,44,.48) 72%);
   border:1px solid rgba(155,190,255,.36);
   box-shadow:0 16px 34px rgba(0,0,0,.42),inset 0 1px 1px rgba(255,255,255,.25);
@@ -185,24 +185,40 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);bo
   50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,-2px)}
 }
 #cv{width:100%;height:100%}
+.stage-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;
+  padding:10px 12px 24px;text-align:center
+}
 #mult{
-  position:absolute;inset:0;display:grid;place-items:center;
-  font-size:52px;font-weight:900;pointer-events:none;direction:ltr;
+  font-size:48px;font-weight:900;line-height:1.05;direction:ltr;
   transition:color .2s ease,text-shadow .2s ease,transform .2s ease
 }
-.m-plain{color:#e6eaff;text-shadow:0 0 16px rgba(255,255,255,.28)}
+.m-plain{color:#ff9ec7;text-shadow:0 0 18px rgba(255,158,199,.45)}
 .m-green{color:#3ddc97;text-shadow:0 0 24px rgba(61,220,151,.65)}
 .m-blue{color:#35e0ff;text-shadow:0 0 26px rgba(53,224,255,.7)}
 .m-purple{color:#c084fc;text-shadow:0 0 28px rgba(192,132,252,.78)}
 .m-yellow{color:#ffd43b;text-shadow:0 0 30px rgba(255,212,59,.85)}
 .m-rainbow{
-  background:linear-gradient(90deg,#ff5d7a,#ffc94d,#3ddc97,#35e0ff,#c084fc,#ff5d7a);
+  background:linear-gradient(90deg,#ff9ec7,#ffc94d,#3ddc97,#35e0ff,#c084fc,#ff9ec7);
   background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:rainbowMove 1.4s linear infinite;filter:drop-shadow(0 0 18px rgba(255,255,255,.45))
+  animation:rainbowMove 1.4s linear infinite;filter:drop-shadow(0 0 18px rgba(255,158,199,.5))
 }
 @keyframes rainbowMove{0%{background-position:0% 50%}100%{background-position:250% 50%}}
 
-#sub{position:absolute;bottom:8px;width:100%;text-align:center;font-size:13px;color:var(--mut)}
+#liveTop3{
+  margin-top:6px;display:flex;flex-direction:column;gap:3px;
+  max-width:94%;background:rgba(8,13,36,.52);
+  border:1px solid rgba(255,158,199,.26);border-radius:12px;
+  padding:5px 9px;font-size:11px;line-height:1.35
+}
+.top3-row{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.top3-name{color:#f4f7ff;font-weight:700;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.top3-c1{color:#ff9ec7;font-weight:900}
+.top3-c2{color:#35e0ff;font-weight:900}
+.top3-c3{color:#ffc94d;font-weight:900}
+
+#sub{position:absolute;bottom:6px;width:100%;text-align:center;font-size:12px;color:var(--mut)}
 .hist{display:flex;gap:6px;overflow:auto;margin-bottom:10px;direction:ltr;padding-bottom:2px}
 .hist span{
   padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;
@@ -242,25 +258,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);bo
   color:var(--gold);font-size:12px;font-weight:800
 }
 
-.arena-ring-wrap{position:relative;width:194px;height:194px;margin:10px auto;display:grid;place-items:center}
-#arenaCv{width:194px;height:194px;border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.45)}
-.arena-center{
-  position:absolute;width:98px;height:98px;border-radius:50%;
-  background:rgba(16,24,62,.48);
-  border:1px solid rgba(255,255,255,.35);
-  box-shadow:inset 0 2px 8px rgba(255,255,255,.25),0 6px 18px rgba(0,0,0,.35);
-  display:grid;place-items:center;text-align:center;overflow:hidden
+.arena-hero{
+  text-align:center;
+  background:radial-gradient(circle at 50% 0%,rgba(255,158,199,.18),rgba(16,24,62,.42) 72%);
+  border:1px solid rgba(255,158,199,.32);
+  border-radius:20px;padding:16px 14px;margin-bottom:12px
 }
-.arena-center img{width:100%;height:100%;object-fit:cover}
-.arena-cd{
-  position:absolute;inset:0;background:rgba(8,12,34,.55);
-  display:grid;place-items:center;font-size:28px;font-weight:900;color:#fff
+.arena-pool-val{
+  font-size:32px;font-weight:900;margin:4px 0;
+  text-shadow:0 0 22px rgba(255,158,199,.35)
 }
-.arena-plus{
-  position:absolute;top:-8px;left:50%;transform:translateX(-50%);
-  width:28px;height:28px;border-radius:50%;background:var(--gold);color:#1d1200;
-  font-weight:900;font-size:20px;display:grid;place-items:center;
-  box-shadow:0 0 18px rgba(255,201,77,.9);transform-origin:50% 105px
+.arena-timer-badge{
+  display:inline-block;margin-top:6px;padding:4px 12px;border-radius:99px;
+  background:rgba(53,224,255,.14);border:1px solid rgba(53,224,255,.35);
+  font-size:12px;font-weight:800
 }
 
 #winnerModal{
@@ -310,17 +321,22 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);bo
   transition:transform .2s ease,border-color .2s ease
 }
 .stat div:hover{transform:translateY(-2px);border-color:rgba(53,224,255,.45)}
-.stat b{display:block;font-size:18px;color:var(--acc2)}
+.stat b{display:block;font-size:18px;color:var(--pink)}
 .stat small{color:var(--mut)}
 #toast{
   position:fixed;top:14px;left:50%;transform:translateX(-50%);
   background:linear-gradient(135deg,rgba(32,46,112,.72),rgba(14,22,56,.78));
-  border:1px solid var(--acc2);padding:10px 16px;
+  border:1px solid var(--pink);padding:10px 16px;
   border-radius:14px;z-index:60;display:none;font-weight:700;
-  box-shadow:0 12px 28px rgba(0,0,0,.42),0 0 16px rgba(53,224,255,.25);
+  box-shadow:0 12px 28px rgba(0,0,0,.42),0 0 16px rgba(255,158,199,.28);
   animation:popIn .25s ease
 }
 small.m{color:var(--mut)}
+.num-pink{color:#ff9ec7 !important;font-weight:800}
+.num-cyan{color:#35e0ff !important;font-weight:800}
+.num-gold{color:#ffc94d !important;font-weight:800}
+.num-mint{color:#3ddc97 !important;font-weight:800}
+.num-lav{color:#c084fc !important;font-weight:800}
 .pill-ok{color:var(--ok);font-weight:700}
 .pill-bad{color:var(--bad);font-weight:700}
 .pill-wait{color:var(--gold);font-weight:700}
@@ -355,7 +371,7 @@ small.m{color:var(--mut)}
     <div style="font-size:46px">🏆</div>
     <h3 style="color:var(--gold);font-size:20px;margin-top:6px">برنده آرنا اعلام شد!</h3>
     <div id="wWinnerName" style="font-size:22px;font-weight:900;margin:8px 0"></div>
-    <div id="wWinnerPrize" style="font-size:17px;color:var(--ok);font-weight:800;margin-bottom:14px"></div>
+    <div id="wWinnerPrize" style="font-size:17px;color:#ff9ec7;font-weight:800;margin-bottom:14px"></div>
     <button style="width:100%" onclick="document.getElementById('winnerModal').classList.remove('show')">ادامه بازی</button>
   </div>
 </div>
@@ -369,7 +385,7 @@ small.m{color:var(--mut)}
       <div class="bar"><i id="xp"></i></div>
     </div>
     <button class="ghost" style="padding:8px 10px;border-radius:99px" id="sndBtn" onclick="toggleSound()">🔊</button>
-    <div class="coins">💎 <span id="coins">0</span> TON</div>
+    <div class="coins">💎 <span id="coins" class="num-pink">0</span> TON</div>
   </div>
 
   <div class="page on" id="p-games">
@@ -377,26 +393,26 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge">DUAL BET + SHIELD • زنده</span>
         <div style="font-size:19px;font-weight:900">🚀 بازی کرش (Crash)</div>
-        <small class="m">ورود از 0.01 تا 50 TON • سپر ضد انفجار زیر 1.15x</small>
+        <small class="m">ورود از <b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON • سپر زیر <b class="num-pink">1.15x</b></small>
       </div>
       <div class="b-ico">🚀</div>
     </div>
 
     <div class="banner" onclick="openGame('arena')">
       <div>
-        <span class="b-badge" style="background:rgba(255,201,77,.2);color:var(--gold);border-color:rgba(255,201,77,.4)">ARENA • رقابتی</span>
-        <div style="font-size:19px;font-weight:900">⚔️ بازی آرنا (Arena)</div>
-        <small class="m">ورود از 0.01 تا 50 TON • کل بانک را ببر!</small>
+        <span class="b-badge" style="background:rgba(255,158,199,.18);color:#ff9ec7;border-color:rgba(255,158,199,.42)">CUSTOM STAKE ARENA • زنده</span>
+        <div style="font-size:19px;font-weight:900">⚡ بازی آرنا (Arena)</div>
+        <small class="m">مبلغ دلخواه از <b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON • استخر مشترک بدون میز!</small>
       </div>
-      <div class="b-ico">⚔️</div>
+      <div class="b-ico">⚡</div>
     </div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h3 style="margin:0">🔥 ماموریت‌های TON و زنجیره برد</h3>
-        <span class="streak-pill">⚡ برد متوالی: <b id="streakNow">0</b></span>
+        <span class="streak-pill">⚡ برد متوالی: <b id="streakNow" class="num-pink">0</b></span>
       </div>
-      <small class="m" style="display:block;margin-bottom:8px">هر ۳ برد متوالی = جایزه TON • بودجه فعال بونوس: <b id="promoPoolTxt" style="color:var(--ok)">0 TON</b></small>
+      <small class="m" style="display:block;margin-bottom:8px">هر <b class="num-pink">3</b> برد متوالی = جایزه TON • بودجه فعال بونوس: <b id="promoPoolTxt" class="num-pink">0 TON</b></small>
       <div id="missionsBox"></div>
     </div>
 
@@ -411,12 +427,15 @@ small.m{color:var(--mut)}
     <div class="hist" id="hist"></div>
     <div id="stage">
       <canvas id="cv"></canvas>
-      <div id="mult" class="m-plain">1.00x</div>
+      <div class="stage-overlay">
+        <div id="mult" class="m-plain">1.00x</div>
+        <div id="liveTop3"></div>
+      </div>
       <div id="sub"></div>
     </div>
 
     <div class="card" style="margin-top:12px">
-      <small class="m" style="display:block;margin-bottom:8px">محدوده ورود به بازی: <b>0.01 TON</b> تا <b>50 TON</b></small>
+      <small class="m" style="display:block;margin-bottom:8px">محدوده ورود به بازی: <b class="num-pink">0.01 TON</b> تا <b class="num-pink">50 TON</b></small>
 
       <div class="dual-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -429,7 +448,7 @@ small.m{color:var(--mut)}
         </div>
         <label class="shield-lbl">
           <input type="checkbox" id="shA">
-          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.15x = ۵۰٪ بازگشت شرط)</span>
+          <span>🛡️ سپر ضد انفجار (+<b class="num-pink">15%</b> هزینه؛ زیر <b class="num-pink">1.15x</b> = <b class="num-pink">50%</b> بازگشت)</span>
         </label>
         <div class="row" style="margin-bottom:8px">
           <button class="ghost" style="padding:7px" onclick="qSlot('a',0.5)">½</button>
@@ -450,7 +469,7 @@ small.m{color:var(--mut)}
         </div>
         <label class="shield-lbl">
           <input type="checkbox" id="shB">
-          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.15x = ۵۰٪ بازگشت شرط)</span>
+          <span>🛡️ سپر ضد انفجار (+<b class="num-pink">15%</b> هزینه؛ زیر <b class="num-pink">1.15x</b> = <b class="num-pink">50%</b> بازگشت)</span>
         </label>
         <div class="row" style="margin-bottom:8px">
           <button class="ghost" style="padding:7px" onclick="qSlot('b',0.5)">½</button>
@@ -466,21 +485,20 @@ small.m{color:var(--mut)}
 
   <div class="page" id="p-arena">
     <button class="ghost" style="margin-bottom:10px;padding:7px 12px" onclick="go('games',document.querySelector('.tabs button'))">← بازگشت به بازی‌ها</button>
-    <div class="sub" id="arenaTabs"></div>
     <div id="arenaStage"></div>
   </div>
 
   <div class="page" id="p-wheel">
     <div class="card" style="text-align:center">
       <h3>🎡 گردونه‌ی روزانه TON</h3>
-      <small class="m" style="display:block;margin-bottom:6px">شانس: 0.01 TON (۹۹٪) • 0.1 TON (۱٪) • 0.02 TON روی گردونه</small>
+      <small class="m" style="display:block;margin-bottom:6px">شانس: <b class="num-pink">0.01</b> TON (<b class="num-cyan">99%</b>) • <b class="num-pink">0.1</b> TON (<b class="num-gold">1%</b>) • <b class="num-pink">0.02</b> TON</small>
       <div class="pointer">▼</div>
       <canvas id="wheel" width="440" height="440"></canvas>
       <button id="wbtn" style="width:100%;margin-top:10px" onclick="spin()">بچرخان</button>
     </div>
     <div class="card">
       <h3>🏷 جایزه‌ی اسم ربات</h3>
-      <small class="m">آیدی ربات (<b id="botun"></b>) را در اسم پروفایل تلگرامتان بگذارید و هر ۲۴ ساعت 0.01 TON بگیرید.</small>
+      <small class="m">آیدی ربات (<b id="botun" class="num-lav"></b>) را در اسم پروفایل تلگرامتان بگذارید و هر <b class="num-pink">24</b> ساعت <b class="num-pink">0.01</b> TON بگیرید.</small>
       <button id="tbtn" class="o" style="width:100%;margin-top:10px" onclick="tag()">بررسی و دریافت 0.01 TON</button>
     </div>
   </div>
@@ -503,8 +521,8 @@ small.m{color:var(--mut)}
 
     <div class="card">
       <h3>💎 کیف TON</h3>
-      <div style="font-size:28px;font-weight:900;color:var(--acc2);text-align:center;margin-bottom:10px">
-        💎 <span id="w2">0</span> TON
+      <div style="font-size:28px;font-weight:900;text-align:center;margin-bottom:10px">
+        💎 <span id="w2" class="num-pink">0</span> <span class="num-cyan">TON</span>
       </div>
 
       <div class="ton-box" style="margin-top:0">
@@ -513,9 +531,9 @@ small.m{color:var(--mut)}
           <small id="tonWalletBadge" class="m">کیف‌پول متصل نشده</small>
         </div>
         <div class="row" style="margin-top:6px">
-          <button class="ghost" onclick="setDepTon(0.05)">0.05 TON</button>
-          <button class="ghost" onclick="setDepTon(0.1)">0.1 TON</button>
-          <button class="ghost" onclick="setDepTon(0.5)">0.5 TON</button>
+          <button class="ghost" onclick="setDepTon(0.05)"><span class="num-pink">0.05</span> TON</button>
+          <button class="ghost" onclick="setDepTon(0.1)"><span class="num-pink">0.1</span> TON</button>
+          <button class="ghost" onclick="setDepTon(0.5)"><span class="num-pink">0.5</span> TON</button>
         </div>
         <div class="row" style="margin-top:8px">
           <input id="depTonAmt" type="number" step="0.01" min="0.01" max="50" value="0.1" placeholder="مقدار TON (0.01 تا 50)">
@@ -538,7 +556,7 @@ small.m{color:var(--mut)}
             <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonAddrDisp').textContent,'آدرس TON کپی شد')">کپی</button>
           </div>
           <div class="mono-pill">
-            <span>Memo: <b id="tonMemoDisp">398101056984149</b></span>
+            <span>Memo: <b id="tonMemoDisp" class="num-pink">398101056984149</b></span>
             <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonMemoDisp').textContent,'ممو کپی شد')">کپی</button>
           </div>
         </details>
@@ -547,22 +565,22 @@ small.m{color:var(--mut)}
       <hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:12px 0">
 
       <div>
-        <small class="m">درخواست برداشت TON (حداقل 0.2 TON • ۱۰٪ مالیات کسر می‌شود):</small>
+        <small class="m">درخواست برداشت TON (حداقل <b class="num-pink">0.2</b> TON • <b class="num-pink">10%</b> مالیات کسر می‌شود):</small>
         <div class="row" style="margin-top:8px">
           <input id="wdAmt" type="number" step="0.01" min="0.2" placeholder="مقدار TON (حداقل 0.2)">
           <button class="o" onclick="requestWithdraw()">ثبت برداشت</button>
         </div>
         <input id="wdTon" type="text" placeholder="آدرس کیف‌پول TON مقصد" style="margin-top:8px;direction:ltr;text-align:left">
-        <div id="wdCalc" style="font-size:12px;color:var(--mut);margin-top:6px">مالیات ۱۰٪: 0 TON • دریافتی خالص: 0 TON</div>
+        <div id="wdCalc" style="font-size:12px;color:var(--mut);margin-top:6px">مالیات <span class="num-pink">10%</span>: <span class="num-pink">0</span> TON • دریافتی خالص: <span class="num-pink">0</span> TON</div>
       </div>
     </div>
 
     <div class="card">
       <h3>🤝 دعوت از دوستان (رفرال)</h3>
-      <small class="m">با دعوت هر دوست، <b>۸٪ از هر واریز TON</b> و <b>۰.۵٪ از هر بازی TON</b> او را پاداش بگیرید!</small>
+      <small class="m">با دعوت هر دوست، <b class="num-pink">8%</b> از هر واریز TON و <b class="num-pink">0.5%</b> از هر بازی TON او را پاداش بگیرید!</small>
       <div class="stat" style="margin:10px 0">
-        <div><b id="refCnt">0</b><small>تعداد زیرمجموعه‌ها</small></div>
-        <div><b id="refEarn">0 TON</b><small>کل درآمد رفرال</small></div>
+        <div><b id="refCnt" class="num-pink">0</b><small>تعداد زیرمجموعه‌ها</small></div>
+        <div><b id="refEarn" class="num-pink">0 TON</b><small>کل درآمد رفرال</small></div>
       </div>
       <div class="row">
         <input id="refLink" readonly style="font-size:12px;direction:ltr" value="در حال ساخت لینک...">
@@ -609,7 +627,7 @@ small.m{color:var(--mut)}
 
     <div class="card">
       <h3>🎁 مدیریت بودجه بونوس (اضافه / کم کردن TON)</h3>
-      <small class="m" style="display:block;margin-bottom:8px">بودجه فعلی بونوس: <b id="admBonusPool" style="color:var(--ok)">0 TON</b></small>
+      <small class="m" style="display:block;margin-bottom:8px">بودجه فعلی بونوس: <b id="admBonusPool" class="num-pink">0 TON</b></small>
       <input id="admBonusDelta" type="number" step="0.01" placeholder="مقدار TON بونوس (مثلاً 0.5 یا -0.2)">
       <div class="row" style="margin-top:8px">
         <button class="g" onclick="adminBonusDelta(1)">+ اضافه به بونوس</button>
@@ -763,6 +781,7 @@ const fmt = n => {
   if (!isFinite(v)) return '0';
   return Number(v.toFixed(4)).toString();
 };
+const numColorClass = idx => ['num-pink', 'num-cyan', 'num-gold', 'num-mint', 'num-lav'][idx % 5];
 const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '';
 const ms2t = ms => {
   const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
@@ -906,7 +925,7 @@ function multClass(v) {
   })();
 })();
 
-let st = null, me = null, botUsername = '', tab = 'games', selectedArena = 0.1, meHistMode = 'tx', lastArenaWinnerAt = 0, prevCrashPhase = '';
+let st = null, me = null, botUsername = '', tab = 'games', arenaDraftAmt = '0.1', meHistMode = 'tx', lastArenaWinnerAt = 0, prevCrashPhase = '';
 
 function go(t, b) {
   tab = t;
@@ -924,7 +943,7 @@ function openGame(g) {
   tab = g;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
   $('p-' + g).classList.add('on');
-  if (g === 'arena') renderArena();
+  if (g === 'arena') renderArena(true);
 }
 
 function updateRefLink() {
@@ -962,19 +981,19 @@ function renderMissionsAndStreak(u) {
   }
   $('missionsBox').innerHTML = list.map(m => {
     const prog = Math.min(m.target, m.progress || 0);
-    const streakReqTxt = m.minStreak > 0 ? ` • حداقل برد متوالی: ${m.minStreak}` : '';
+    const streakReqTxt = m.minStreak > 0 ? ` • حداقل برد متوالی: <b class="num-pink">${m.minStreak}</b>` : '';
     let btnHtml = '';
     if (m.claimed) {
       btnHtml = `<button class="ghost" disabled>دریافت شد ✅</button>`;
     } else if (m.claimable) {
-      btnHtml = `<button class="g" onclick="claimMission('${m.id}')">دریافت ${fmt(m.reward)} TON</button>`;
+      btnHtml = `<button class="g" onclick="claimMission('${m.id}')">دریافت <span class="num-pink">${fmt(m.reward)}</span> TON</button>`;
     } else {
-      btnHtml = `<button class="ghost" disabled>${prog}/${m.target}</button>`;
+      btnHtml = `<button class="ghost" disabled><span class="num-pink">${prog}/${m.target}</span></button>`;
     }
     return `<div class="mission-row">
       <div>
         <div><b>${m.title}</b></div>
-        <small class="m">پیشرفت: ${prog}/${m.target}${streakReqTxt} • جایزه: <b>${fmt(m.reward)} TON</b></small>
+        <small class="m">پیشرفت: <b class="num-cyan">${prog}/${m.target}</b>${streakReqTxt} • جایزه: <b class="num-pink">${fmt(m.reward)} TON</b></small>
       </div>
       ${btnHtml}
     </div>`;
@@ -1013,9 +1032,13 @@ function setUser(u) {
   const lo = T[u.level - 1] || 0, hi = T[u.level];
   $('xp').style.width = Math.min(100, (u.xp - lo) / (hi - lo) * 100) + '%';
   $('stats').innerHTML = [
-    ['بازی‌ها', u.games], ['برد', u.wins], ['بیشترین ضریب', u.bestMult + 'x'],
-    ['رکورد برد متوالی', u.bestStreak || 0], ['در گردش', fmt(u.wagered) + ' TON'], ['مجموع برد', fmt(u.won) + ' TON']
-  ].map(a => `<div><b>${a[1]}</b><small>${a[0]}</small></div>`).join('');
+    ['بازی‌ها', u.games, 'num-pink'],
+    ['برد', u.wins, 'num-cyan'],
+    ['بیشترین ضریب', u.bestMult + 'x', 'num-gold'],
+    ['رکورد برد متوالی', u.bestStreak || 0, 'num-mint'],
+    ['در گردش', fmt(u.wagered) + ' TON', 'num-lav'],
+    ['مجموع برد', fmt(u.won) + ' TON', 'num-pink']
+  ].map(a => `<div><b class="${a[2]}">${a[1]}</b><small>${a[0]}</small></div>`).join('');
   if (u.isAdmin) $('admtab').style.display = '';
   $('wbtn').disabled = u.wheelIn > 0;
   $('wbtn').textContent = u.wheelIn > 0 ? 'بعدی: ' + ms2t(u.wheelIn) : 'بچرخان';
@@ -1061,6 +1084,18 @@ function curMult() {
   if (c.phase === 'run') return Math.exp(c.growth * (c.runningMs + (Date.now() - syncT)) / 1000);
   return c.phase === 'crashed' ? c.crashAt : 1;
 }
+function renderLiveTop3() {
+  const top3 = (st && st.crash && Array.isArray(st.crash.top3)) ? st.crash.top3 : [];
+  if (!top3.length) {
+    $('liveTop3').innerHTML = `<div class="top3-row"><span style="color:var(--mut)">۳ برد برتر این دور: <b class="num-pink">در انتظار برداشت...</b></span></div>`;
+    return;
+  }
+  const medals = ['🥇', '🥈', '🥉'];
+  const amtCls = ['top3-c1', 'top3-c2', 'top3-c3'];
+  $('liveTop3').innerHTML = top3.slice(0, 3).map((item, i) =>
+    `<div class="top3-row"><span>${medals[i]}</span><span class="top3-name">${item.name}</span><b class="${amtCls[i]}">+${fmt(item.wonAmount)} TON</b><small class="num-pink">(${item.mult}x)</small></div>`
+  ).join('');
+}
 function updateSlotUI(slot, m) {
   const c = st.crash;
   const sObj = c.my && c.my[slot];
@@ -1069,21 +1104,21 @@ function updateSlotUI(slot, m) {
   const labelNum = slot === 'a' ? '۱' : '۲';
 
   if (sObj) {
-    stEl.textContent = `شرط: ${fmt(sObj.amount)} TON${sObj.shield ? ' • سپر فعال' : ''}`;
+    stEl.innerHTML = `شرط: <b class="num-pink">${fmt(sObj.amount)} TON</b>${sObj.shield ? ' • <b class="num-cyan">سپر فعال</b>' : ''}`;
   } else {
     stEl.textContent = '';
   }
 
   if (c.phase === 'bet') {
-    btn.textContent = sObj ? `ثبت شد (${fmt(sObj.amount)} TON)` : `ثبت شرط ${labelNum}`;
+    btn.innerHTML = sObj ? `ثبت شد (<span class="num-pink">${fmt(sObj.amount)}</span> TON)` : `ثبت شرط ${labelNum}`;
     btn.disabled = !!sObj;
     btn.className = '';
   } else if (c.phase === 'run' && sObj && !sObj.cashed && !sObj.lost) {
-    btn.textContent = `برداشت ${labelNum}: ` + fmt(sObj.amount * m) + ' TON';
+    btn.innerHTML = `برداشت ${labelNum}: <span class="num-pink">${fmt(sObj.amount * m)}</span> TON`;
     btn.disabled = false;
     btn.className = 'g';
   } else {
-    if (sObj && sObj.cashed) btn.textContent = `برد ${sObj.cashed}x ✅`;
+    if (sObj && sObj.cashed) btn.innerHTML = `برد <span class="num-pink">${sObj.cashed}x</span> ✅`;
     else if (sObj && sObj.lost) btn.textContent = 'منفجر شد 💥';
     else btn.textContent = 'منتظر دور بعد';
     btn.disabled = true;
@@ -1124,9 +1159,11 @@ function draw() {
     sub.textContent = 'منفجر شد';
   }
 
+  renderLiveTop3();
+
   const prog = c.phase === 'bet' ? 0 : Math.min(1, Math.log(Math.max(1.0001, m)) / Math.log(8));
   const px = 44 + prog * (W - 124), py = H - 44 - prog * (H - 124) * 0.85;
-  cx.strokeStyle = '#35e0ff'; cx.lineWidth = 5;
+  cx.strokeStyle = '#ff9ec7'; cx.lineWidth = 5;
   cx.beginPath(); cx.moveTo(44, H - 44); cx.quadraticCurveTo(44 + (px - 44) * .6, H - 44, px, py); cx.stroke();
 
   if (c.phase !== 'crashed') {
@@ -1145,22 +1182,39 @@ function renderCrash() {
   const histHtml = c.history.map(h => `<span class="${multClass(h)}">${h.toFixed(2)}x</span>`).join('');
   $('hist').innerHTML = histHtml;
   $('ghist').innerHTML = histHtml || '<small class="m">هنوز ضریبی ثبت نشده</small>';
-  $('plist').innerHTML = c.players.map(p => {
+  $('plist').innerHTML = c.players.map((p, i) => {
     const winPart = p.cashed
-      ? ` <b class="pill-ok">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} TON</b>`
+      ? ` <b class="num-pink">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} TON</b>`
       : '';
-    return `<div class="pl"><span>${p.name}</span><span>شرط: 💎 ${fmt(p.amount)} TON${winPart}</span></div>`;
+    return `<div class="pl"><span>${p.name}</span><span>شرط: 💎 <b class="${numColorClass(i)}">${fmt(p.amount)}</b> TON${winPart}</span></div>`;
   }).join('') || '<small class="m">هنوز کسی شرط نبسته</small>';
 }
 
-const ARENA_COLS = ['#35e0ff', '#ffc94d', '#c084fc', '#3ddc97', '#ff5d7a', '#7c5cff'];
-function renderArena() {
-  if (!st || !st.arenas) return;
-  $('arenaTabs').innerHTML = st.arenas.map(a =>
-    `<button class="${a.entry === selectedArena ? 'on' : ''}" onclick="selectedArena=${a.entry};renderArena()">میز ${fmt(a.entry)} TON</button>`
-  ).join('');
-  const a = st.arenas.find(x => x.entry === selectedArena) || st.arenas[0];
-  if (!a) return;
+function qArenaAmt(factor) {
+  const inp = $('arenaAmtInp');
+  const cur = Number(inp ? inp.value : arenaDraftAmt) || 0.1;
+  const next = Math.min(50, Math.max(0.01, Math.round(cur * factor * 1000) / 1000));
+  arenaDraftAmt = String(next);
+  if (inp) inp.value = arenaDraftAmt;
+}
+function qaArenaAmt() {
+  const val = Math.min(50, Math.max(0.01, Number((me ? me.coins : 0.01).toFixed(4))));
+  arenaDraftAmt = String(val);
+  const inp = $('arenaAmtInp');
+  if (inp) inp.value = arenaDraftAmt;
+}
+function setArenaPreset(v) {
+  arenaDraftAmt = String(v);
+  const inp = $('arenaAmtInp');
+  if (inp) inp.value = arenaDraftAmt;
+}
+
+function renderArena(forceInputSync = false) {
+  if (!st || !st.arena) return;
+  const a = st.arena;
+  const players = a.players || [];
+  const totalBank = Number(a.pool ?? players.reduce((s, p) => s + Number(p.amount || 0), 0));
+  const prize = totalBank * 0.95;
 
   if (a.last && a.last.at > lastArenaWinnerAt) {
     lastArenaWinnerAt = a.last.at;
@@ -1170,64 +1224,68 @@ function renderArena() {
     beep(920, 0.2, 'triangle', 0.12);
   }
 
-  const totalBank = a.entry * a.players.length;
-  const prize = totalBank * 0.95;
   const cdSec = a.left != null ? Math.max(0, Math.ceil(a.left / 1000)) : null;
-  const plusAngle = ((Date.now() / 12) % 360);
-  const centerImg = a.players[0]?.photo ? `<img src="${a.players[0].photo}">` : '⚔️';
+  const statusBadge = cdSec !== null
+    ? `<span class="arena-timer-badge">⏳ پایان دور آرنا در <b class="num-pink">${cdSec}</b> ثانیه</span>`
+    : `<span class="arena-timer-badge">⚡ حداقل <b class="num-pink">2</b> بازیکن برای شروع شمارش معکوس</span>`;
+
+  const existingInp = $('arenaAmtInp');
+  const preserveVal = (!forceInputSync && existingInp && document.activeElement === existingInp)
+    ? existingInp.value
+    : arenaDraftAmt;
 
   $('arenaStage').innerHTML = `
-    <div class="card" style="text-align:center">
-      <div style="font-size:12px;color:var(--mut)">مجموع بانک (BANK)</div>
-      <div style="font-size:28px;font-weight:900;color:var(--acc2)">💎 ${fmt(totalBank)} TON</div>
-      <small class="m">جایزه برنده: ${fmt(prize)} TON • حداقل ۲ نفر (0.01 تا 50 TON)</small>
+    <div class="arena-hero">
+      <div style="font-size:12px;color:var(--mut)">استخر آزاد آرنا (بدون میز)</div>
+      <div class="arena-pool-val">💎 <span class="num-pink">${fmt(totalBank)}</span> <span class="num-cyan">TON</span></div>
+      <small class="m">سهم برنده (<b class="num-pink">95%</b>): <b class="num-mint">${fmt(prize)} TON</b> • شانس برد متناسب با مبلغ ورود</small>
+      <div>${statusBadge}</div>
+    </div>
 
-      <div class="arena-ring-wrap">
-        <canvas id="arenaCv" width="380" height="380"></canvas>
-        <div class="arena-plus" style="transform:translateX(-50%) rotate(${plusAngle}deg)">+</div>
-        <div class="arena-center">
-          ${centerImg}
-          ${cdSec !== null ? `<div class="arena-cd">${cdSec}</div>` : ''}
-        </div>
+    <div class="card">
+      <h3>🎯 ورود با مبلغ دلخواه (<b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON)</h3>
+      <input id="arenaAmtInp" type="number" step="0.01" min="0.01" max="50" value="${preserveVal}" placeholder="مبلغ TON مورد نظر را وارد کنید" oninput="arenaDraftAmt=this.value">
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.05)"><span class="num-pink">0.05</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.1)"><span class="num-cyan">0.1</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.5)"><span class="num-gold">0.5</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(1)"><span class="num-mint">1</span></button>
       </div>
-
-      <button style="width:100%;font-size:16px" ${a.joined ? 'disabled' : ''} onclick="joinA(${a.entry})">
-        ${a.joined ? 'وارد میز شده‌اید ✅' : `ورود به آرنا (${fmt(a.entry)} TON)`}
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" style="padding:7px" onclick="qArenaAmt(0.5)">½</button>
+        <button class="ghost" style="padding:7px" onclick="qArenaAmt(2)">2×</button>
+        <button class="ghost" style="padding:7px" onclick="qaArenaAmt()">همه</button>
+      </div>
+      <button class="g" style="width:100%;font-size:15px;margin-top:10px" ${a.joined ? 'disabled' : ''} onclick="joinArenaCustom()">
+        ${a.joined ? 'وارد این دور آرنا شده‌اید ✅' : '🚀 ورود به آرنا'}
       </button>
     </div>
 
     <div class="card">
-      <h3>بازیکنان حاضر (${a.players.length})</h3>
-      ${a.players.map((p, i) => {
-        const chance = a.players.length ? (100 / a.players.length).toFixed(1) : 0;
+      <h3>شرکت‌کنندگان این دور (<span class="num-pink">${players.length}</span>)</h3>
+      ${players.map((p, i) => {
+        const chance = totalBank > 0 ? ((Number(p.amount || 0) / totalBank) * 100).toFixed(1) : '0';
         return `<div class="pl">
-          <span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ARENA_COLS[i % ARENA_COLS.length]};margin-left:6px"></i>${p.name}</span>
-          <span>شانس: <b>${chance}%</b> • 💎 ${fmt(a.entry)} TON</span>
+          <span><b class="${numColorClass(i)}">${i + 1}.</b> ${p.name}</span>
+          <span>شانس: <b class="num-cyan">${chance}%</b> • 💎 <b class="num-pink">${fmt(p.amount)}</b> TON</span>
         </div>`;
-      }).join('') || '<small class="m">هنوز بازیکنی وارد نشده است</small>'}
+      }).join('') || '<small class="m">هنوز بازیکنی وارد این دور نشده است</small>'}
     </div>
   `;
-
-  const ac = $('arenaCv');
-  if (ac) {
-    const ax = ac.getContext('2d');
-    ax.clearRect(0, 0, 380, 380);
-    const n = Math.max(1, a.players.length);
-    const step = (Math.PI * 2) / n;
-    for (let i = 0; i < n; i++) {
-      ax.beginPath();
-      ax.moveTo(190, 190);
-      ax.arc(190, 190, 182, i * step, (i + 1) * step);
-      ax.fillStyle = a.players.length ? ARENA_COLS[i % ARENA_COLS.length] : 'rgba(124,92,255,.25)';
-      ax.fill();
-      ax.lineWidth = 4;
-      ax.strokeStyle = '#090d26';
-      ax.stroke();
-    }
-  }
 }
-async function joinA(e) {
-  try { await api('arena/join', { entry: e }); beep(660, 0.1); toast('وارد آرنا شدید'); poll(); } catch {}
+
+async function joinArenaCustom() {
+  const inp = $('arenaAmtInp');
+  const amt = Number(inp ? inp.value : arenaDraftAmt);
+  if (!isFinite(amt) || amt < 0.01 || amt > 50) {
+    return toast('مبلغ ورود به آرنا باید بین 0.01 تا 50 TON باشد');
+  }
+  try {
+    await api('arena/join', { amount: amt });
+    beep(660, 0.1);
+    toast(`✅ با ${fmt(amt)} TON وارد آرنا شدید`);
+    poll();
+  } catch {}
 }
 
 const SEG = [0.01, 0.02, 0.01, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02];
@@ -1237,7 +1295,7 @@ function drawWheel() {
   x.clearRect(0, 0, 440, 440);
   SEG.forEach((v, i) => {
     x.beginPath(); x.moveTo(220, 220); x.arc(220, 220, 214, i * a, (i + 1) * a);
-    x.fillStyle = v === 0.1 ? '#ffc94d' : (v === 0.02 ? '#7c5cff' : '#35e0ff');
+    x.fillStyle = v === 0.1 ? '#ffc94d' : (v === 0.02 ? '#ff9ec7' : '#35e0ff');
     x.fill();
     x.strokeStyle = '#090d26'; x.lineWidth = 3; x.stroke();
     x.save(); x.translate(220, 220); x.rotate(i * a + a / 2);
@@ -1266,7 +1324,7 @@ $('wdAmt').addEventListener('input', () => {
   const v = Number($('wdAmt').value || 0);
   const tax = v >= 0.2 ? fmt(v * 0.1) : '0';
   const net = v >= 0.2 ? fmt(v * 0.9) : '0';
-  $('wdCalc').textContent = `مالیات ۱۰٪: ${tax} TON • دریافتی خالص: ${net} TON`;
+  $('wdCalc').innerHTML = `مالیات <span class="num-pink">10%</span>: <span class="num-pink">${tax}</span> TON • دریافتی خالص: <span class="num-pink">${net}</span> TON`;
 });
 async function requestWithdraw() {
   const amount = Number($('wdAmt').value || 0);
@@ -1276,7 +1334,7 @@ async function requestWithdraw() {
     await api('withdraw', { amount, tonAddress });
     $('wdAmt').value = '';
     $('wdTon').value = '';
-    $('wdCalc').textContent = 'مالیات ۱۰٪: 0 TON • دریافتی خالص: 0 TON';
+    $('wdCalc').innerHTML = `مالیات <span class="num-pink">10%</span>: <span class="num-pink">0</span> TON • دریافتی خالص: <span class="num-pink">0</span> TON`;
     toast('درخواست برداشت TON ثبت شد (در انتظار تایید ادمین)');
     poll();
   } catch {}
@@ -1292,8 +1350,8 @@ function renderMeHist() {
   if (!me) return;
   if (meHistMode === 'tx') {
     const list = me.txs || [];
-    $('meHistBox').innerHTML = list.map(t => {
-      const cls = t.amount >= 0 ? 'pill-ok' : 'pill-bad';
+    $('meHistBox').innerHTML = list.map((t, i) => {
+      const cls = t.amount >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
       const stBadge = t.status === 'pending' ? ' <span class="pill-wait">(در انتظار تایید)</span>' : '';
       return `<div class="pl">
         <div><div>${t.note}${stBadge}</div><small class="m">${fmtTime(t.at)}</small></div>
@@ -1302,8 +1360,8 @@ function renderMeHist() {
     }).join('') || '<small class="m">تراکنشی ثبت نشده است</small>';
   } else {
     const list = me.gameLogs || [];
-    $('meHistBox').innerHTML = list.map(g => {
-      const cls = g.delta >= 0 ? 'pill-ok' : 'pill-bad';
+    $('meHistBox').innerHTML = list.map((g, i) => {
+      const cls = g.delta >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
       return `<div class="pl">
         <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
         <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
@@ -1317,7 +1375,7 @@ async function lbTab(k, b) {
   if (b) b.classList.add('on');
   const d = await api('leaderboard');
   $('lbbox').innerHTML = d[k].map((u, i) =>
-    `<div class="lb"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><div class="av" style="width:30px;height:30px;font-size:13px">${u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎')}</div><span class="grow nm">${u.name} <small class="m">Lv${u.level}</small></span><b style="color:var(--acc2)">${fmt(u.value)} TON</b></div>`
+    `<div class="lb"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : `<span class="${numColorClass(i)}">${i + 1}</span>`}</span><div class="av" style="width:30px;height:30px;font-size:13px">${u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎')}</div><span class="grow nm">${u.name} <small class="m">Lv<span class="${numColorClass(i + 1)}">${u.level}</span></small></span><b class="${numColorClass(i)}">${fmt(u.value)} TON</b></div>`
   ).join('') || '<small class="m">هنوز داده‌ای نیست</small>';
 }
 
@@ -1336,11 +1394,11 @@ async function loadAdmin() {
     $('admTonMemo').value = d.tonDeposit.memo || '';
   }
 
-  $('amissionsList').innerHTML = (d.missionsConfig || []).map(m => `
+  $('amissionsList').innerHTML = (d.missionsConfig || []).map((m, i) => `
     <div class="mission-row">
       <div>
         <div><b>${m.title}</b> ${m.enabled === false ? '<span class="pill-bad">(غیرفعال)</span>' : '<span class="pill-ok">(فعال)</span>'}</div>
-        <small class="m">نوع: ${m.type} • هدف: ${m.target} • جایزه: ${fmt(m.reward)} TON${m.minStreak ? ` • برد متوالی: ${m.minStreak}` : ''}</small>
+        <small class="m">نوع: ${m.type} • هدف: <b class="${numColorClass(i)}">${m.target}</b> • جایزه: <b class="num-pink">${fmt(m.reward)} TON</b>${m.minStreak ? ` • برد متوالی: <b class="num-pink">${m.minStreak}</b>` : ''}</small>
       </div>
       <div style="display:flex;gap:6px">
         <button class="ghost" style="padding:6px 9px;font-size:11px" onclick="adminToggleMission('${m.id}')">${m.enabled === false ? 'فعال' : 'توقف'}</button>
@@ -1356,8 +1414,8 @@ async function loadAdmin() {
       ? `<div class="fraud-box"><div class="pill-bad">⚠️ هشدار برداشت مشکوک:</div>${reasons.map(r => `<div>• ${r}</div>`).join('')}</div>`
       : `<div style="font-size:11px;color:var(--ok)">✅ بررسی خودکار: مشکوک نیست</div>`;
     return `<div class="pl" style="flex-direction:column;align-items:stretch;gap:6px">
-      <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}${w.uid})</div>
-      <div style="font-size:12px">درخواستی: <b>${fmt(w.gross)} TON</b> | مالیات ۱۰٪: <b>${fmt(w.tax)} TON</b> | خالص: <b class="pill-ok">${fmt(w.net)} TON</b></div>
+      <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}<span class="num-cyan">${w.uid}</span>)</div>
+      <div style="font-size:12px">درخواستی: <b class="num-pink">${fmt(w.gross)} TON</b> | مالیات <b class="num-pink">10%</b>: <b class="num-gold">${fmt(w.tax)} TON</b> | خالص: <b class="num-pink">${fmt(w.net)} TON</b></div>
       <div style="font-size:12px;color:var(--mut);direction:ltr;text-align:right">TON: <b>${w.tonAddress ? w.tonAddress : 'وارد نشده'}</b></div>
       ${riskHtml}
       <input id="wdMsg_${w.id}" type="text" placeholder="پیام اختیاری برای کاربر (خالی بماند ارسال نمی‌شود)">
@@ -1368,11 +1426,11 @@ async function loadAdmin() {
     </div>`;
   }).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
 
-  $('ausers').innerHTML = d.users.map(u => {
+  $('ausers').innerHTML = d.users.map((u, i) => {
     const hasFlag = !!(u.audit && u.audit.flags && u.audit.flags.length);
     return `<div class="pl" style="cursor:pointer" onclick="showAdminUser('${u.id}')">
-      <span>${hasFlag ? '⚠️ ' : ''}${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • گردش: ${fmt(u.wagered || 0)}</small></span>
-      <span>💎 <b>${fmt(u.coins)} TON</b> ${u.banned ? '🚫' : ''}</span>
+      <span>${hasFlag ? '⚠️ ' : ''}${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • گردش: <b class="${numColorClass(i)}">${fmt(u.wagered || 0)}</b></small></span>
+      <span>💎 <b class="num-pink">${fmt(u.coins)} TON</b> ${u.banned ? '🚫' : ''}</span>
     </div>`;
   }).join('');
 
@@ -1404,11 +1462,11 @@ function showAdminUser(uid) {
     return true;
   });
 
-  const txsHtml = filteredTxs.slice(0, 40).map(t => {
+  const txsHtml = filteredTxs.slice(0, 40).map((t, i) => {
     const amt = Number(t.amount || 0);
-    const cls = amt >= 0 ? 'pill-ok' : 'pill-bad';
+    const cls = amt >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
     const balStep = (t.before !== undefined && t.after !== undefined)
-      ? `<small class="m">قبل: ${fmt(t.before)} → بعد: ${fmt(t.after)} • منبع: ${t.source || '—'}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
+      ? `<small class="m">قبل: <b class="num-cyan">${fmt(t.before)}</b> → بعد: <b class="num-pink">${fmt(t.after)}</b> • منبع: ${t.source || '—'}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
       : `<small class="m">منبع: ${t.source || '—'}</small>`;
     return `<div class="pl">
       <div><div>${t.note}</div>${balStep}</div>
@@ -1416,8 +1474,8 @@ function showAdminUser(uid) {
     </div>`;
   }).join('') || '<small class="m">تراکنشی در این فیلتر یافت نشد</small>';
 
-  const glsHtml = (u.gameLogs || []).slice(0, 30).map(g => {
-    const cls = g.delta >= 0 ? 'pill-ok' : 'pill-bad';
+  const glsHtml = (u.gameLogs || []).slice(0, 30).map((g, i) => {
+    const cls = g.delta >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
     return `<div class="pl">
       <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
       <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
@@ -1425,18 +1483,18 @@ function showAdminUser(uid) {
   }).join('') || '<small class="m">بدون بازی</small>';
 
   $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.68)">
-    <h3>حسابرسی ${u.name} (${u.id})</h3>
-    <div style="font-size:12px;color:var(--mut);margin-bottom:6px">موجودی فعلی: <b>${fmt(u.coins)} TON</b> • رفرال: <b>${u.refCount || 0}</b> • آخرین IP: <b>${u.lastIp || '—'}</b></div>
+    <h3>حسابرسی ${u.name} (<span class="num-cyan">${u.id}</span>)</h3>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:6px">موجودی فعلی: <b class="num-pink">${fmt(u.coins)} TON</b> • رفرال: <b class="num-gold">${u.refCount || 0}</b> • آخرین IP: <b>${u.lastIp || '—'}</b></div>
     ${flagsHtml}
     <div class="audit-grid">
-      <div>واریز TON: <b>${fmt(a.tonDeposits)}</b></div>
-      <div>تغییر ادمین: <b>${fmt(a.adminAdjustments)}</b></div>
-      <div>بونوس/ماموریت/گردونه: <b>${fmt(a.promoRewards)}</b></div>
-      <div>رفرال: <b>${fmt(a.referralRewards)}</b></div>
-      <div>گردش شرط‌ها: <b>${fmt(a.wagered)}</b></div>
-      <div>مجموع بردها: <b>${fmt(a.won)}</b></div>
-      <div>برداشت ثبت‌شده: <b>${fmt(a.withdrawGross)}</b></div>
-      <div>اختلاف تراز: <b class="${Math.abs(a.discrepancy || 0) > 0.001 ? 'pill-bad' : 'pill-ok'}">${fmt(a.discrepancy)}</b></div>
+      <div>واریز TON: <b class="num-pink">${fmt(a.tonDeposits)}</b></div>
+      <div>تغییر ادمین: <b class="num-cyan">${fmt(a.adminAdjustments)}</b></div>
+      <div>بونوس/ماموریت/گردونه: <b class="num-gold">${fmt(a.promoRewards)}</b></div>
+      <div>رفرال: <b class="num-mint">${fmt(a.referralRewards)}</b></div>
+      <div>گردش شرط‌ها: <b class="num-lav">${fmt(a.wagered)}</b></div>
+      <div>مجموع بردها: <b class="num-pink">${fmt(a.won)}</b></div>
+      <div>برداشت ثبت‌شده: <b class="num-cyan">${fmt(a.withdrawGross)}</b></div>
+      <div>اختلاف تراز: <b class="${Math.abs(a.discrepancy || 0) > 0.001 ? 'pill-bad' : 'num-pink'}">${fmt(a.discrepancy)}</b></div>
     </div>
     <div class="sub" style="margin-top:10px">
       <button class="${adminTxFilter === 'all' ? 'on' : ''}" onclick="setAdminTxFilter('all','${u.id}')">همه (${allTxs.length})</button>
@@ -1555,7 +1613,7 @@ async function poll() {
     st = d; syncT = Date.now();
     setUser(d.user);
     renderCrash();
-    if (tab === 'arena') renderArena();
+    if (tab === 'arena') renderArena(false);
     if (tab === 'me') renderMeHist();
   } catch {}
 }

@@ -1,6 +1,5 @@
-# Tonia Game v2.3 (Audit & Anti-Fraud Edition)
+# Tonia Game v2.5 (Custom Stake Arena + Live Crash Top 3 + Audit Edition)
 Cloudflare Workers + Durable Object + Telegram WebApp + Tonkeeper Direct Deposit & On-Chain Verification.
-- Full transaction audit trail with before/after balance, source tag, IP & request metadata.
-- Automatic balance reconciliation & discrepancy detection per user in Admin Panel.
-- Suspicious withdrawal flag (anti-fraud check comparing wagered volume, deposits, bonuses, and requested withdrawal).
-- Full transaction and game log inspection in Admin Panel with source filtering.
+- Arena redesigned without fixed table tiers: users enter any custom TON amount (from 0.01 to 50 TON) into a shared live battle pool.
+- Live Top 3 highest wins during Crash rounds displayed right beneath the rising multiplier inside the Crash stage.
+- Colorful numbers with soft pink (#ff9ec7) highlights and full transaction audit trail.

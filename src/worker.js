@@ -1,8 +1,8 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.3 + Full Ledger Audit)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.5 + Custom Stake Arena)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
-const ARENA_TIERS = [0.1, 0.5, 2], FEE = 0.05, ARENA_WAIT = 20000;
+const FEE = 0.05, ARENA_WAIT = 20000;
 
 const MIN_BET = 0.01;
 const MAX_BET = 50;
@@ -159,7 +159,7 @@ export class Game {
       promoPool: 1.0,
       history: [],
       crash: null,
-      arenas: null,
+      arena: null,
       withdrawals: [],
       usedTonTxs: [],
       tonOrders: []
@@ -177,10 +177,25 @@ export class Game {
     if (!Array.isArray(this.meta.usedTonTxs)) this.meta.usedTonTxs = [];
     if (!Array.isArray(this.meta.tonOrders)) this.meta.tonOrders = [];
     if (!this.meta.crash) this.meta.crash = { phase: 'bet', id: 1, betEnd: Date.now() + BET_MS, startAt: 0, crashAt: 0, endAt: 0, bets: {} };
-    if (!this.meta.arenas) {
-      this.meta.arenas = {};
-      ARENA_TIERS.forEach(t => this.meta.arenas[t] = { entry: t, players: [], endAt: 0, last: null });
+
+    if (!this.meta.arena || !Array.isArray(this.meta.arena.players)) {
+      let migratedPlayers = [];
+      let migratedLast = null;
+      if (this.meta.arenas && typeof this.meta.arenas === 'object') {
+        for (const tObj of Object.values(this.meta.arenas)) {
+          if (tObj && Array.isArray(tObj.players)) {
+            for (const p of tObj.players) {
+              migratedPlayers.push({ id: p.id, name: p.name, amount: r4(tObj.entry || MIN_BET) });
+            }
+          }
+          if (tObj && tObj.last && (!migratedLast || (tObj.last.at || 0) > (migratedLast.at || 0))) {
+            migratedLast = tObj.last;
+          }
+        }
+      }
+      this.meta.arena = { players: migratedPlayers, endAt: 0, last: migratedLast };
     }
+
     this.users = {};
     const all = await s.list({ prefix: 'u:' });
     for (const [k, v] of all) {
@@ -698,42 +713,53 @@ export class Game {
       break;
     }
 
-    for (const a of Object.values(this.meta.arenas)) {
+    const a = this.meta.arena;
+    if (a && Array.isArray(a.players)) {
       if (a.players.length >= 2 && !a.endAt) {
         a.endAt = now + ARENA_WAIT;
         this.saveMeta();
       }
       if (a.endAt && now >= a.endAt) {
-        const totalPool = r4(a.entry * a.players.length);
+        const totalPool = r4(a.players.reduce((sum, p) => sum + Number(p.amount || 0), 0));
         const houseCut = r4(totalPool * FEE);
         this.fundPromoPool(houseCut * 0.25);
         const prize = r4(totalPool * (1 - FEE));
-        const winIdx = Math.floor(Math.random() * a.players.length);
+
+        const weights = a.players.map(p => Math.max(0.0001, Number(p.amount || MIN_BET)));
+        const weightSum = weights.reduce((s, w) => s + w, 0);
+        let pick = Math.random() * weightSum;
+        let winIdx = a.players.length - 1;
+        for (let i = 0; i < weights.length; i++) {
+          pick -= weights[i];
+          if (pick <= 0) { winIdx = i; break; }
+        }
+
         const w = a.players[winIdx];
         const wu = this.users[w.id];
         if (wu) {
-          this.applyBalance(wu, prize, 'arena_win', `جایزه آرنا ${fmtTon(a.entry)} TON`, 'completed', { countWon: true });
+          this.applyBalance(wu, prize, 'arena_win', `جایزه آرنا (${fmtTon(totalPool)} TON استخر)`, 'completed', { countWon: true });
           wu.wins++;
           this.recordWinStreak(wu);
-          this.addXp(wu, a.entry * 5);
-          this.addGameLog(wu, 'arena', `برنده آرنا ${fmtTon(a.entry)} TON (${a.players.length} نفر)`, r4(prize - a.entry));
+          this.addXp(wu, Math.max(0.2, totalPool * 3));
+          this.addGameLog(wu, 'arena', `برنده آرنا با ورود ${fmtTon(w.amount)} TON از استخر ${fmtTon(totalPool)} TON`, r4(prize - w.amount));
           this.touch(wu);
         }
         a.players.forEach(p => {
           const pu = this.users[p.id];
           if (!pu) return;
           pu.games++;
-          this.addXp(pu, a.entry * 2);
+          this.addXp(pu, Math.max(0.1, Number(p.amount || 0.01) * 2));
           if (p.id !== w.id) {
             this.resetStreak(pu);
-            this.addGameLog(pu, 'arena', `باخت در آرنا ${fmtTon(a.entry)} TON (برنده: ${w.name})`, -a.entry);
+            this.addGameLog(pu, 'arena', `باخت در آرنا با ورود ${fmtTon(p.amount)} TON (برنده: ${w.name})`, -r4(p.amount));
           }
           this.touch(pu);
         });
         a.last = {
           winner: w.name, winnerId: w.id, winnerIdx: winIdx,
+          winnerStake: r4(w.amount),
           prize, pool: totalPool, playersCount: a.players.length,
-          players: a.players.map(p => ({ id: p.id, name: p.name })),
+          players: a.players.map(p => ({ id: p.id, name: p.name, amount: r4(p.amount) })),
           at: now
         };
         a.players = []; a.endAt = 0;
@@ -859,7 +885,7 @@ export class Game {
     this.advance();
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const key = `${req.method} ${url.pathname}`, isAdmin = u.id === String(this.env.ADMIN_ID);
-    const S = this.meta.settings, c = this.meta.crash, now = Date.now();
+    const S = this.meta.settings, c = this.meta.crash, a = this.meta.arena, now = Date.now();
     const bad = (m) => json(400, { error: m });
     if (key.includes('/api/admin/') && !isAdmin) return json(403, { error: 'forbidden' });
 
@@ -890,6 +916,20 @@ export class Game {
             });
           }
         }
+
+        const roundTop3 = playersList
+          .filter(p => p.cashed && Number(p.wonAmount || 0) > 0)
+          .sort((x, y) => Number(y.wonAmount) - Number(x.wonAmount))
+          .slice(0, 3)
+          .map(p => ({ name: p.name, wonAmount: r4(p.wonAmount), mult: p.cashed }));
+
+        const arenaPlayers = (a?.players || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          amount: r4(p.amount),
+          photo: this.users[p.id]?.photo || ''
+        }));
+
         const out = {
           user: this.pub(u),
           crash: {
@@ -900,15 +940,16 @@ export class Game {
             growth: GROWTH,
             history: this.meta.history.slice(0, 15),
             players: playersList.slice(0, 40),
+            top3: roundTop3,
             my: c.bets[u.id] || null
           },
-          arenas: Object.values(this.meta.arenas).map(a => ({
-            entry: a.entry,
-            players: a.players.map(p => ({ id: p.id, name: p.name, photo: this.users[p.id]?.photo || '' })),
-            left: a.endAt ? Math.max(0, a.endAt - now) : null,
-            joined: a.players.some(p => p.id === u.id),
-            last: a.last
-          }))
+          arena: {
+            players: arenaPlayers,
+            pool: r4(arenaPlayers.reduce((s, p) => s + Number(p.amount || 0), 0)),
+            left: a?.endAt ? Math.max(0, a.endAt - now) : null,
+            joined: arenaPlayers.some(p => p.id === u.id),
+            last: a?.last || null
+          }
         };
         if (isAdmin) out.crash.adminNext = S.queue.slice(0, 5);
         return json(200, out);
@@ -985,21 +1026,25 @@ export class Game {
       }
 
       case 'POST /api/arena/join': {
-        const a = this.meta.arenas[Number(body.entry)];
-        if (!a) return bad('نامعتبر');
-        if (!(a.entry >= MIN_BET && a.entry <= MAX_BET)) {
-          return bad(`ورودی آرنا باید بین ${fmtTon(MIN_BET)} تا ${fmtTon(MAX_BET)} TON باشد`);
+        const amt = r4(body.amount);
+        if (!(isFinite(amt) && amt >= MIN_BET && amt <= MAX_BET)) {
+          return bad(`مبلغ ورود به آرنا باید بین ${fmtTon(MIN_BET)} تا ${fmtTon(MAX_BET)} TON باشد`);
         }
-        if (a.players.some(p => p.id === u.id)) return bad('قبلاً وارد شده‌اید');
-        if (a.endAt && a.endAt - now < 1200) return bad('دور در حال پایان است');
-        if (r4(u.coins) < a.entry) return bad('موجودی TON کافی نیست');
-        this.applyBalance(u, -a.entry, 'arena_join', `ورودی آرنا ${fmtTon(a.entry)} TON`, 'completed', { countWager: true });
+        if (!a || !Array.isArray(a.players)) return bad('آرنا در دسترس نیست');
+        if (a.players.some(p => p.id === u.id)) return bad('شما در این دور آرنا وارد شده‌اید');
+        if (a.endAt && a.endAt - now < 1200) return bad('دور آرنا در حال پایان است');
+        if (amt > r4(u.coins + 1e-9)) return bad('موجودی TON کافی نیست');
+
+        this.applyBalance(u, -amt, 'arena_join', `ورود به آرنا (${fmtTon(amt)} TON)`, 'completed', { countWager: true });
         u.arenaEntries = (u.arenaEntries || 0) + 1;
-        a.players.push({ id: u.id, name: u.name });
-        this.rewardReferrer(u, a.entry, 0.005, 'پاداش ۰.۵٪ بازی آرنا زیرمجموعه');
+        a.players.push({ id: u.id, name: u.name, amount: amt });
+        if (a.players.length >= 2 && !a.endAt) {
+          a.endAt = now + ARENA_WAIT;
+        }
+        this.rewardReferrer(u, amt, 0.005, 'پاداش ۰.۵٪ بازی آرنا زیرمجموعه');
         this.touch(u);
         this.saveMeta();
-        return json(200, { ok: true });
+        return json(200, { ok: true, amount: amt });
       }
 
       case 'POST /api/ton/prepare': {
