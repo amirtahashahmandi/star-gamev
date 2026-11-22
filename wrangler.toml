@@ -1,0 +1,16 @@
+name = "starsia-game"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+keep_vars = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "GAME"
+class_name = "Game"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Game"]
