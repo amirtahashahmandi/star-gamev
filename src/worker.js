@@ -4,7 +4,7 @@ const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 50, 150, 400, 900, 1800, 3500, 7000, 14000, 30000];
 const ARENA_TIERS = [10, 50, 200], FEE = 0.05, ARENA_WAIT = 20000;
 const WHEEL = [{ v: 1, w: 12 }, { v: 2, w: 42 }, { v: 4, w: 36 }, { v: 8, w: 7 }, { v: 10, w: 3 }];
-const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.45, SHIELD_REFUND = 0.50;
+const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.15, SHIELD_REFUND = 0.50;
 const STREAK_MILESTONE = 3, STREAK_REWARD = 1.5;
 
 const levelOf = xp => { let l = 0; LEVELS.forEach((t, i) => { if (xp >= t) l = i + 1; }); return l; };
@@ -47,15 +47,15 @@ export class Game {
   async load() {
     const s = this.state.storage;
     this.meta = (await s.get('meta')) || {
-      settings: { minMult: 1.0, maxMult: 50, edge: 0.05, greed: 0.58, queue: [], startCoins: 0 },
+      settings: { minMult: 1.0, maxMult: 25, edge: 0.08, greed: 0.42, queue: [], startCoins: 0 },
       promoPool: 25,
       history: [],
       crash: null,
       arenas: null,
       withdrawals: []
     };
-    if (this.meta.settings.startCoins === undefined) this.meta.settings.startCoins = 0;
-    if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.58;
+    this.meta.settings.startCoins = 0;
+    if (this.meta.settings.greed === undefined) this.meta.settings.greed = 0.42;
     if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 25;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
     if (!this.meta.crash) this.meta.crash = { phase: 'bet', id: 1, betEnd: Date.now() + BET_MS, startAt: 0, crashAt: 0, endAt: 0, bets: {} };
@@ -171,17 +171,13 @@ export class Game {
     let u = this.users[id];
     const isNew = !u;
     if (!u) {
-      const startCoins = r2(Math.max(0, Number(this.meta.settings.startCoins ?? 0)));
       u = this.users[id] = {
-        id, coins: startCoins, xp: 0, wagered: 0, won: 0, wins: 0,
+        id, coins: 0, xp: 0, wagered: 0, won: 0, wins: 0,
         games: 0, bestMult: 0, lastWheel: 0, lastTag: 0, banned: false, created: Date.now(),
         name: '', username: '', photo: '', txs: [], gameLogs: [],
         refBy: '', refCount: 0, refEarned: 0, streak: 0, bestStreak: 0,
         missions: { dayKey: this.dayKey(), crash2x: 0, arenaPlays: 0, claimedCrash2x: false, claimedArena: false }
       };
-      if (startCoins > 0) {
-        this.addTx(u, 'deposit', startCoins, 'موجودی اولیه Starsia');
-      }
       this.touch(u);
     }
     this.ensureMissions(u);
@@ -235,20 +231,29 @@ export class Game {
   nextCrashPoint() {
     const s = this.meta.settings;
     if (s.queue.length) { const v = s.queue.shift(); this.saveMeta(); return v; }
-    const greed = Math.max(0, Math.min(1, Number(s.greed ?? 0.58)));
-    const edge = Math.max(0.01, Math.min(0.35, Number(s.edge ?? 0.05)));
+    const greed = Math.max(0, Math.min(1, Number(s.greed ?? 0.42)));
+    const edge = Math.max(0.02, Math.min(0.35, Number(s.edge ?? 0.08)));
     const r = Math.random();
     let m;
-    if (r < greed * 0.36) {
-      m = 1.7 + Math.pow(Math.random(), 1.45) * 4.2;
-    } else if (r < greed * 0.44) {
-      m = 6.0 + Math.pow(Math.random(), 2.2) * 18.0;
+    if (r < 0.22) {
+      // ضریب‌های پایین ولی غیرآزاردهنده (عمدتاً 1.05x تا 1.45x، و گاهی 1.01x تا 1.14x برای فعال بودن سپر)
+      m = Math.random() < 0.35
+        ? 1.01 + Math.random() * 0.13
+        : 1.15 + Math.random() * 0.30;
+    } else if (r < 0.22 + (1 - 0.22) * (0.68 + greed * 0.18)) {
+      // بازه متعادل و پرطرفدار (1.45x تا 3.4x)
+      m = 1.45 + Math.pow(Math.random(), 1.55) * 1.95;
+    } else if (r < 0.96) {
+      // ضریب‌های متوسط تا نسبتاً بالا (3.4x تا 7.5x)
+      m = 3.4 + Math.pow(Math.random(), 2.1) * 4.1;
     } else {
-      const base = Math.max(0.0001, 1 - Math.random());
-      m = (1 - edge) / base;
+      // اوج‌های هیجانی محدود (7.5x تا 16x)
+      m = 7.5 + Math.pow(Math.random(), 2.8) * 8.5;
     }
-    m = Math.min(Math.max(m, Number(s.minMult) || 1), Number(s.maxMult) || 50);
-    return Math.max(1, r2(m));
+    const maxCap = Math.min(Number(s.maxMult) || 25, 25);
+    const minFloor = Math.max(1.0, Number(s.minMult) || 1.0);
+    m = Math.min(Math.max(m * (1 - edge * 0.25), minFloor), maxCap);
+    return Math.max(1.0, r2(m));
   }
 
   recordWinStreak(u) {
@@ -273,6 +278,7 @@ export class Game {
   settleCrashSlot(u, slot, mult, slotLabel) {
     slot.cashed = r2(mult);
     const win = r2(slot.amount * mult);
+    slot.winAmount = win;
     const profit = r2(win - slot.amount);
     u.coins = r2(u.coins + win);
     u.won = r2(u.won + win);
@@ -576,14 +582,16 @@ export class Game {
             playersList.push({
               name: `${pName} #1${entry.a.shield ? ' 🛡️' : ''}`,
               amount: entry.a.amount,
-              cashed: entry.a.cashed || null
+              cashed: entry.a.cashed || null,
+              wonAmount: entry.a.cashed ? r2(entry.a.winAmount ?? entry.a.amount * entry.a.cashed) : null
             });
           }
           if (entry.b) {
             playersList.push({
               name: `${pName} #2${entry.b.shield ? ' 🛡️' : ''}`,
               amount: entry.b.amount,
-              cashed: entry.b.cashed || null
+              cashed: entry.b.cashed || null,
+              wonAmount: entry.b.cashed ? r2(entry.b.winAmount ?? entry.b.amount * entry.b.cashed) : null
             });
           }
         }
@@ -636,7 +644,8 @@ export class Game {
           amount: amt,
           shield: useShield,
           shieldFee,
-          auto: Number(body.auto) > 1 ? r2(Number(body.auto)) : 0
+          auto: Number(body.auto) > 1 ? r2(Number(body.auto)) : 0,
+          winAmount: 0
         };
         c.bets[u.id] = entry;
         this.touch(u);
@@ -653,7 +662,7 @@ export class Game {
         if (m >= c.crashAt) return bad('منفجر شد');
         this.settleCrashSlot(u, slot, m, slotKey === 'a' ? 'شرط ۱' : 'شرط ۲');
         this.saveMeta();
-        return json(200, { ok: true, mult: slot.cashed });
+        return json(200, { ok: true, mult: slot.cashed, wonAmount: slot.winAmount });
       }
 
       case 'POST /api/mission/claim': {
@@ -793,12 +802,12 @@ export class Game {
           })),
           withdrawals: this.meta.withdrawals.slice(0, 100),
           promoPool: r2(this.meta.promoPool || 0),
-          settings: S
+          settings: { ...S, startCoins: 0 }
         });
 
       case 'POST /api/admin/coins': {
         const t = this.findUserByQuery(body.id), amt = Number(body.amount);
-        if (!t || !isFinite(amt)) return bad('کاربر (آیدی یا یوزرنیم) یا مقدار نامعتبر است');
+        if (!t || !isFinite(amt) || amt === 0) return bad('کاربر (آیدی یا یوزرنیم) یا مقدار نامعتبر است');
         t.coins = Math.max(0, r2(t.coins + amt));
         this.addTx(t, amt >= 0 ? 'admin_add' : 'admin_sub', amt, 'شارژ / کسر دستی توسط ادمین');
         this.touch(t);
@@ -807,6 +816,30 @@ export class Game {
           text: `${amt >= 0 ? '➕' : '➖'} ${Math.abs(amt)} استارز ${amt >= 0 ? 'به حساب شما اضافه' : 'از حساب شما کم'} شد.\nموجودی فعلی: ${t.coins} ⭐`
         });
         return json(200, { ok: true, coins: t.coins });
+      }
+
+      case 'POST /api/admin/bulk_coins': {
+        const amt = Number(body.amount);
+        if (!isFinite(amt) || amt === 0) return bad('مقدار سکه/استارز نامعتبر است');
+        const allUsers = Object.values(this.users);
+        let count = 0;
+        for (const target of allUsers) {
+          const prev = r2(target.coins || 0);
+          const next = Math.max(0, r2(prev + amt));
+          const delta = r2(next - prev);
+          target.coins = next;
+          if (delta !== 0) {
+            this.addTx(
+              target,
+              delta >= 0 ? 'admin_add' : 'admin_sub',
+              delta,
+              delta >= 0 ? `افزایش همگانی توسط ادمین (+${delta} ⭐)` : `کاهش همگانی توسط ادمین (${delta} ⭐)`
+            );
+          }
+          this.touch(target);
+          count++;
+        }
+        return json(200, { ok: true, updatedCount: count, delta: amt });
       }
 
       case 'POST /api/admin/withdraw': {
@@ -866,10 +899,10 @@ export class Game {
 
       case 'POST /api/admin/settings':
         if (body.minMult >= 1) S.minMult = Number(body.minMult);
-        if (body.maxMult >= 1.1) S.maxMult = Number(body.maxMult);
+        if (body.maxMult >= 1.1) S.maxMult = Math.min(25, Number(body.maxMult));
         if (body.edge >= 0 && body.edge < 0.5) S.edge = Number(body.edge);
         if (body.greed >= 0 && body.greed <= 1) S.greed = Number(body.greed);
-        if (body.startCoins >= 0) S.startCoins = Number(body.startCoins);
+        S.startCoins = 0;
         if (body.promoPool !== undefined && Number(body.promoPool) >= 0) this.meta.promoPool = r2(Number(body.promoPool));
         this.saveMeta();
         return json(200, { ok: true, settings: S, promoPool: this.meta.promoPool });

@@ -7,138 +7,162 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
-  --bg:#050817;--card:rgba(18,26,64,.52);--line:rgba(130,165,255,.26);
+  --bg:#050817;
+  --glass:rgba(20,30,74,.26);
+  --glass-hi:rgba(36,52,122,.34);
+  --line:rgba(155,190,255,.32);
   --acc:#7c5cff;--acc2:#35e0ff;--gold:#ffc94d;--ok:#3ddc97;--bad:#ff5d7a;
-  --tx:#f1f4ff;--mut:#9aa6de
+  --tx:#f4f7ff;--mut:#a9b6eb
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
   margin:0;
-  background:radial-gradient(circle at 18% 0%,#261c6b 0%,#090e29 48%,#040714 100%);
+  background:
+    radial-gradient(circle at 15% 5%,rgba(124,92,255,.35),transparent 42%),
+    radial-gradient(circle at 88% 15%,rgba(53,224,255,.22),transparent 38%),
+    radial-gradient(circle at 50% 100%,rgba(61,220,151,.12),transparent 45%),
+    linear-gradient(165deg,#070b22 0%,#050817 60%,#030510 100%);
   color:var(--tx);font-family:system-ui,Tahoma,sans-serif;min-height:100vh;overflow-x:hidden;
   perspective:1200px
 }
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
-#app{position:relative;z-index:1;max-width:500px;margin:0 auto;padding:12px 12px 96px}
+#app{position:relative;z-index:1;max-width:500px;margin:0 auto;padding:12px 12px 98px}
 
 #splash{
   position:fixed;inset:0;z-index:50;display:grid;place-items:center;
-  background:radial-gradient(circle at 50% 45%,#251c72 0%,#040714 75%);
-  transition:opacity .65s ease,transform .65s ease
+  background:radial-gradient(circle at 50% 45%,rgba(124,92,255,.38) 0%,rgba(5,8,23,.94) 75%);
+  transition:opacity .65s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1)
 }
 #splash.hide{opacity:0;transform:scale(1.06);pointer-events:none}
-.logo-wrap{text-align:center;animation:floatLogo 2.2s ease-in-out infinite}
+.logo-wrap{text-align:center;animation:floatLogo 2.4s ease-in-out infinite}
 .logo-ring{
   width:94px;height:94px;margin:0 auto 14px;border-radius:28px;
-  background:linear-gradient(135deg,rgba(124,92,255,.38),rgba(53,224,255,.28));
-  border:1px solid rgba(255,255,255,.32);
-  box-shadow:0 0 44px rgba(124,92,255,.7),inset 0 0 24px rgba(53,224,255,.4);
+  background:linear-gradient(135deg,rgba(124,92,255,.35),rgba(53,224,255,.25));
+  border:1px solid rgba(255,255,255,.36);
+  box-shadow:0 0 44px rgba(124,92,255,.65),inset 0 0 22px rgba(53,224,255,.35);
   display:grid;place-items:center;font-size:46px;
-  animation:popIn .9s cubic-bezier(.18,.89,.32,1.28)
+  animation:popIn .85s cubic-bezier(.18,.89,.32,1.28)
 }
 .logo-title{
   font-size:36px;font-weight:900;letter-spacing:2px;
   background:linear-gradient(90deg,#fff,#35e0ff,#ffc94d,#7c5cff);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:popIn .9s .1s both
+  animation:popIn .85s .1s both
 }
 .logo-line{
   width:150px;height:3px;margin:10px auto 0;border-radius:99px;
   background:linear-gradient(90deg,transparent,#35e0ff,#ffc94d,transparent);
   animation:glowLine 1.6s ease-in-out infinite alternate
 }
-@keyframes popIn{from{opacity:0;transform:translateY(18px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:translateY(18px) scale(.86)}to{opacity:1;transform:none}}
 @keyframes floatLogo{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes glowLine{from{opacity:.4;transform:scaleX(.7)}to{opacity:1;transform:scaleX(1.15)}}
+@keyframes glowLine{from{opacity:.45;transform:scaleX(.75)}to{opacity:1;transform:scaleX(1.15)}}
+@keyframes cardEnter{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
 
-.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px;animation:cardEnter .5s ease both}
 .av{
   width:42px;height:42px;border-radius:50%;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  background:linear-gradient(135deg,rgba(124,92,255,.75),rgba(53,224,255,.75));
+  border:1px solid rgba(255,255,255,.35);
   display:grid;place-items:center;font-weight:700;overflow:hidden;
-  box-shadow:0 6px 18px rgba(53,224,255,.3),inset 0 1px 2px rgba(255,255,255,.5)
+  box-shadow:0 6px 18px rgba(53,224,255,.25),inset 0 1px 2px rgba(255,255,255,.55);
+  transition:transform .25s ease
 }
+.av:hover{transform:scale(1.06)}
 .av img{width:100%;height:100%;object-fit:cover}
 .grow{flex:1;min-width:0}
 .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lv{font-size:12px;color:var(--mut)}
-.bar{height:5px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden;margin-top:4px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.bar{height:5px;background:rgba(255,255,255,.12);border-radius:9px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
 .coins{
-  background:linear-gradient(135deg,rgba(255,201,77,.22),rgba(124,92,255,.22));
+  background:linear-gradient(135deg,rgba(255,201,77,.18),rgba(124,92,255,.18));
   border:1px solid rgba(255,201,77,.5);padding:7px 13px;border-radius:99px;
   font-weight:800;color:var(--gold);
-  backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
-  box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35)
+  box-shadow:0 8px 24px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .2s ease
 }
+.coins:hover{transform:translateY(-1px) scale(1.02)}
 
+/* شیشه‌ای شفاف (غیر مات) با انیمیشن روان */
 .card,.banner{
   position:relative;
-  background:linear-gradient(145deg,rgba(32,44,104,.55),rgba(12,18,46,.62));
+  background:linear-gradient(145deg,var(--glass-hi),var(--glass));
   border:1px solid var(--line);
-  border-top-color:rgba(255,255,255,.28);
-  border-left-color:rgba(255,255,255,.18);
+  border-top-color:rgba(255,255,255,.38);
+  border-left-color:rgba(255,255,255,.24);
   border-radius:22px;padding:15px;margin-bottom:13px;
-  backdrop-filter:blur(20px) saturate(160%);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);
   box-shadow:
-    0 18px 38px rgba(0,0,0,.48),
-    0 2px 6px rgba(53,224,255,.12),
-    inset 0 1px 1px rgba(255,255,255,.22);
+    0 14px 32px rgba(0,0,0,.38),
+    0 0 18px rgba(53,224,255,.08),
+    inset 0 1px 1px rgba(255,255,255,.28);
   transform-style:preserve-3d;
-  transition:transform .22s cubic-bezier(.2,.8,.2,1),border-color .25s ease,box-shadow .25s ease
+  animation:cardEnter .45s cubic-bezier(.22,1,.36,1) both;
+  transition:transform .24s cubic-bezier(.22,1,.36,1),border-color .25s ease,box-shadow .25s ease,background .25s ease
 }
 .banner{
   overflow:hidden;cursor:pointer;display:flex;
   align-items:center;justify-content:space-between;gap:12px;
-  background:linear-gradient(135deg,rgba(124,92,255,.32),rgba(15,22,56,.68),rgba(53,224,255,.24))
+  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(20,30,74,.28),rgba(53,224,255,.20))
 }
+.banner::before{
+  content:"";position:absolute;top:0;left:-120%;width:65%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:skewX(-22deg);transition:left .65s ease;pointer-events:none
+}
+.banner:hover::before{left:140%}
 .banner::after,.card::after{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(125deg,rgba(255,255,255,.14) 0%,transparent 42%,rgba(53,224,255,.06) 100%)
+  background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,transparent 45%,rgba(53,224,255,.07) 100%)
 }
 .banner:hover,.card:hover{
-  border-color:rgba(53,224,255,.65);
-  box-shadow:0 22px 44px rgba(0,0,0,.55),0 0 22px rgba(124,92,255,.28),inset 0 1px 1px rgba(255,255,255,.32)
+  border-color:rgba(53,224,255,.68);
+  box-shadow:0 20px 40px rgba(0,0,0,.46),0 0 24px rgba(124,92,255,.24),inset 0 1px 1px rgba(255,255,255,.38)
 }
 .banner .b-badge{
   display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;
-  border-radius:99px;background:rgba(53,224,255,.22);color:var(--acc2);margin-bottom:5px;
-  border:1px solid rgba(53,224,255,.35)
+  border-radius:99px;background:rgba(53,224,255,.18);color:var(--acc2);margin-bottom:5px;
+  border:1px solid rgba(53,224,255,.38)
 }
 .banner .b-ico{
   font-size:42px;transform:translateZ(24px);
-  filter:drop-shadow(0 10px 18px rgba(124,92,255,.65))
+  filter:drop-shadow(0 10px 18px rgba(124,92,255,.55));
+  transition:transform .3s ease
 }
+.banner:hover .b-ico{transform:translateZ(28px) scale(1.08) rotate(-4deg)}
 
 h3{margin:0 0 10px;font-size:15px}
 button{
-  font:inherit;border:1px solid rgba(255,255,255,.18);border-radius:13px;padding:11px 14px;color:#fff;
-  background:linear-gradient(135deg,var(--acc),#5032d8);font-weight:700;cursor:pointer;
-  box-shadow:0 8px 18px rgba(124,92,255,.35),inset 0 1px 0 rgba(255,255,255,.28);
-  transition:transform .15s ease,opacity .15s ease
+  font:inherit;border:1px solid rgba(255,255,255,.24);border-radius:13px;padding:11px 14px;color:#fff;
+  background:linear-gradient(135deg,rgba(124,92,255,.85),rgba(80,50,216,.85));font-weight:700;cursor:pointer;
+  box-shadow:0 8px 18px rgba(124,92,255,.28),inset 0 1px 0 rgba(255,255,255,.34);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,opacity .15s ease
 }
-button:active{transform:scale(.96)}
-button:disabled{opacity:.45;cursor:not-allowed}
-button.g{background:linear-gradient(135deg,#27b97c,#188256)}
-button.r{background:linear-gradient(135deg,#ff5d7a,#c22c4a)}
-button.o{background:linear-gradient(135deg,#ffc94d,#e39412);color:#251600}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 22px rgba(124,92,255,.4),inset 0 1px 0 rgba(255,255,255,.45)}
+button:active:not(:disabled){transform:scale(.96)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.g{background:linear-gradient(135deg,rgba(39,185,124,.86),rgba(24,130,86,.86))}
+button.r{background:linear-gradient(135deg,rgba(255,93,122,.86),rgba(194,44,74,.86))}
+button.o{background:linear-gradient(135deg,rgba(255,201,77,.9),rgba(227,148,18,.9));color:#251600}
 button.ghost{
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
-  backdrop-filter:blur(12px);box-shadow:none
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)
 }
+button.ghost:hover:not(:disabled){background:rgba(255,255,255,.14)}
 input,select{
   font:inherit;width:100%;padding:10px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.18);background:rgba(6,10,28,.65);
-  color:var(--tx);text-align:center;backdrop-filter:blur(10px)
+  border:1px solid rgba(155,190,255,.26);background:rgba(10,16,44,.42);
+  color:var(--tx);text-align:center;transition:border-color .2s ease,box-shadow .2s ease
 }
+input:focus,select:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(53,224,255,.16)}
 .row{display:flex;gap:8px}.row>*{flex:1}
 
 #stage{
   position:relative;height:215px;border-radius:20px;overflow:hidden;
-  background:radial-gradient(circle at 50% 115%,#321e8a,#080c24 72%);
-  border:1px solid rgba(130,165,255,.35);
-  box-shadow:0 16px 34px rgba(0,0,0,.5),inset 0 0 40px rgba(0,0,0,.6)
+  background:radial-gradient(circle at 50% 115%,rgba(124,92,255,.35),rgba(10,16,44,.48) 72%);
+  border:1px solid rgba(155,190,255,.36);
+  box-shadow:0 16px 34px rgba(0,0,0,.42),inset 0 1px 1px rgba(255,255,255,.25);
+  transition:border-color .25s ease,box-shadow .25s ease
 }
 #stage.shake{animation:shake .35s ease}
 @keyframes shake{
@@ -149,9 +173,9 @@ input,select{
 #mult{
   position:absolute;inset:0;display:grid;place-items:center;
   font-size:52px;font-weight:900;pointer-events:none;direction:ltr;
-  transition:color .2s ease,text-shadow .2s ease
+  transition:color .2s ease,text-shadow .2s ease,transform .2s ease
 }
-.m-plain{color:#e2e6ff;text-shadow:0 0 14px rgba(255,255,255,.25)}
+.m-plain{color:#e6eaff;text-shadow:0 0 16px rgba(255,255,255,.28)}
 .m-green{color:#3ddc97;text-shadow:0 0 24px rgba(61,220,151,.65)}
 .m-blue{color:#35e0ff;text-shadow:0 0 26px rgba(53,224,255,.7)}
 .m-purple{color:#c084fc;text-shadow:0 0 28px rgba(192,132,252,.78)}
@@ -167,14 +191,24 @@ input,select{
 .hist{display:flex;gap:6px;overflow:auto;margin-bottom:10px;direction:ltr;padding-bottom:2px}
 .hist span{
   padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;
-  background:rgba(24,32,76,.75);border:1px solid rgba(255,255,255,.1);white-space:nowrap
+  background:rgba(28,40,96,.42);border:1px solid rgba(155,190,255,.24);white-space:nowrap;
+  transition:transform .2s ease
 }
-.pl{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.07)}
+.hist span:hover{transform:translateY(-2px)}
+.pl{
+  display:flex;justify-content:space-between;align-items:center;font-size:13px;
+  padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.08);
+  transition:background .2s ease
+}
+.pl:hover{background:rgba(255,255,255,.04);border-radius:10px}
 
 .dual-box{
-  border:1px solid rgba(130,165,255,.24);border-radius:16px;padding:11px;
-  background:rgba(7,11,28,.45);margin-bottom:10px
+  border:1px solid rgba(155,190,255,.28);border-radius:16px;padding:11px;
+  background:rgba(16,24,62,.32);margin-bottom:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  transition:border-color .22s ease
 }
+.dual-box:hover{border-color:rgba(53,224,255,.45)}
 .shield-lbl{
   display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);
   margin:7px 0;cursor:pointer;user-select:none
@@ -183,27 +217,27 @@ input,select{
 
 .mission-row{
   display:flex;justify-content:space-between;align-items:center;gap:8px;
-  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px
+  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px
 }
 .mission-row button{padding:7px 11px;font-size:12px;flex:0 0 auto}
 .streak-pill{
   display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;
-  background:rgba(255,201,77,.16);border:1px solid rgba(255,201,77,.4);
+  background:rgba(255,201,77,.15);border:1px solid rgba(255,201,77,.42);
   color:var(--gold);font-size:12px;font-weight:800
 }
 
 .arena-ring-wrap{position:relative;width:194px;height:194px;margin:10px auto;display:grid;place-items:center}
-#arenaCv{width:194px;height:194px;border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+#arenaCv{width:194px;height:194px;border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.45)}
 .arena-center{
   position:absolute;width:98px;height:98px;border-radius:50%;
-  background:rgba(12,18,48,.72);backdrop-filter:blur(14px);
-  border:1px solid rgba(255,255,255,.28);
-  box-shadow:inset 0 2px 8px rgba(255,255,255,.2);
+  background:rgba(16,24,62,.48);
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:inset 0 2px 8px rgba(255,255,255,.25),0 6px 18px rgba(0,0,0,.35);
   display:grid;place-items:center;text-align:center;overflow:hidden
 }
 .arena-center img{width:100%;height:100%;object-fit:cover}
 .arena-cd{
-  position:absolute;inset:0;background:rgba(6,10,28,.65);
+  position:absolute;inset:0;background:rgba(8,12,34,.55);
   display:grid;place-items:center;font-size:28px;font-weight:900;color:#fff
 }
 .arena-plus{
@@ -214,51 +248,62 @@ input,select{
 }
 
 #winnerModal{
-  position:fixed;inset:0;z-index:40;background:rgba(4,7,20,.72);
-  backdrop-filter:blur(12px);display:none;place-items:center;padding:16px
+  position:fixed;inset:0;z-index:40;background:rgba(4,7,20,.58);
+  display:none;place-items:center;padding:16px;animation:cardEnter .25s ease
 }
 #winnerModal.show{display:grid}
 .wbox{
   max-width:340px;width:100%;text-align:center;
-  background:linear-gradient(145deg,rgba(30,42,102,.85),rgba(10,15,38,.9));
-  border:1px solid rgba(255,201,77,.55);border-radius:24px;padding:22px;
-  box-shadow:0 24px 54px rgba(0,0,0,.65)
+  background:linear-gradient(145deg,rgba(36,52,122,.56),rgba(14,22,56,.62));
+  border:1px solid rgba(255,201,77,.6);border-radius:24px;padding:22px;
+  box-shadow:0 24px 54px rgba(0,0,0,.55),inset 0 1px 1px rgba(255,255,255,.32);
+  animation:popIn .35s cubic-bezier(.18,.89,.32,1.28)
 }
 
+/* نوار پایین شیشه‌ای غیر مات با انیمیشن */
 .tabs{
   position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;justify-content:center;
-  background:rgba(10,15,38,.78);backdrop-filter:blur(20px) saturate(160%);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);
-  border-top:1px solid rgba(255,255,255,.15)
+  background:linear-gradient(180deg,rgba(18,28,72,.38),rgba(10,16,44,.52));
+  border-top:1px solid rgba(155,190,255,.3);
+  box-shadow:0 -10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22)
 }
 .tabs div{display:flex;max-width:500px;width:100%}
 .tabs button{
   flex:1;background:none;border:0;box-shadow:none;border-radius:0;
-  padding:9px 2px;font-size:11px;color:var(--mut)
+  padding:9px 2px;font-size:11px;color:var(--mut);
+  transition:transform .2s cubic-bezier(.22,1,.36,1),color .2s ease
 }
-.tabs button.on{color:var(--acc2)}
-.tabs b{display:block;font-size:19px;margin-bottom:1px}
-.page{display:none}.page.on{display:block}
+.tabs button:hover{transform:translateY(-2px)}
+.tabs button.on{color:var(--acc2);transform:translateY(-3px)}
+.tabs b{display:block;font-size:19px;margin-bottom:1px;transition:transform .22s ease}
+.tabs button.on b{transform:scale(1.14);filter:drop-shadow(0 4px 10px rgba(53,224,255,.45))}
+.page{display:none}.page.on{display:block;animation:cardEnter .35s cubic-bezier(.22,1,.36,1) both}
 
 #wheel{width:220px;height:220px;margin:6px auto;display:block;transition:transform 4s cubic-bezier(.1,.7,.1,1)}
-.pointer{text-align:center;font-size:26px;margin-bottom:-14px;position:relative;z-index:2}
-.lb{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}
+.pointer{text-align:center;font-size:26px;margin-bottom:-14px;position:relative;z-index:2;animation:floatLogo 1.8s ease-in-out infinite}
+.lb{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;transition:background .2s ease}
+.lb:hover{background:rgba(255,255,255,.04);border-radius:10px}
 .lb .rk{width:24px;color:var(--gold);font-weight:700}
 .sub{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .sub button{padding:8px 10px;font-size:12px;background:rgba(255,255,255,.08);box-shadow:none}
-.sub button.on{background:var(--acc)}
+.sub button.on{background:linear-gradient(135deg,rgba(124,92,255,.85),rgba(53,224,255,.65))}
 .stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stat div{
-  background:rgba(8,12,30,.55);border:1px solid rgba(255,255,255,.1);
-  border-radius:15px;padding:10px;text-align:center;backdrop-filter:blur(10px)
+  background:rgba(16,24,62,.32);border:1px solid rgba(155,190,255,.22);
+  border-radius:15px;padding:10px;text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  transition:transform .2s ease,border-color .2s ease
 }
+.stat div:hover{transform:translateY(-2px);border-color:rgba(53,224,255,.45)}
 .stat b{display:block;font-size:18px;color:var(--acc2)}
 .stat small{color:var(--mut)}
 #toast{
   position:fixed;top:14px;left:50%;transform:translateX(-50%);
-  background:rgba(25,34,84,.9);backdrop-filter:blur(14px);
+  background:linear-gradient(135deg,rgba(32,46,112,.72),rgba(14,22,56,.78));
   border:1px solid var(--acc2);padding:10px 16px;
-  border-radius:14px;z-index:60;display:none;font-weight:700;box-shadow:0 10px 26px rgba(0,0,0,.45)
+  border-radius:14px;z-index:60;display:none;font-weight:700;
+  box-shadow:0 12px 28px rgba(0,0,0,.42),0 0 16px rgba(53,224,255,.25);
+  animation:popIn .25s ease
 }
 small.m{color:var(--mut)}
 .pill-ok{color:var(--ok);font-weight:700}
@@ -305,7 +350,7 @@ small.m{color:var(--mut)}
       <div>
         <span class="b-badge">DUAL BET + SHIELD • زنده</span>
         <div style="font-size:19px;font-weight:900">🚀 بازی کرش (Crash)</div>
-        <small class="m">شرط دوگانه (ایمن + ریسکی) و سپر ضد انفجار!</small>
+        <small class="m">شرط دوگانه (ایمن + ریسکی) و سپر ضد انفجار زیر 1.15x!</small>
       </div>
       <div class="b-ico">🚀</div>
     </div>
@@ -370,7 +415,7 @@ small.m{color:var(--mut)}
         </div>
         <label class="shield-lbl">
           <input type="checkbox" id="shA">
-          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.45x = ۵۰٪ بازگشت شرط)</span>
+          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.15x = ۵۰٪ بازگشت شرط)</span>
         </label>
         <div class="row" style="margin-bottom:8px">
           <button class="ghost" style="padding:7px" onclick="qSlot('a',0.5)">½</button>
@@ -387,11 +432,11 @@ small.m{color:var(--mut)}
         </div>
         <div class="row">
           <input id="amtB" type="number" inputmode="numeric" value="10" min="1" placeholder="مبلغ شرط ۲">
-          <input id="autoB" type="number" step="0.1" placeholder="برداشت خودکار (مثلاً 4.0)">
+          <input id="autoB" type="number" step="0.1" placeholder="برداشت خودکار (مثلاً 3.0)">
         </div>
         <label class="shield-lbl">
           <input type="checkbox" id="shB">
-          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.45x = ۵۰٪ بازگشت شرط)</span>
+          <span>🛡️ سپر ضد انفجار (+۱۵٪ هزینه؛ انفجار زیر 1.15x = ۵۰٪ بازگشت شرط)</span>
         </label>
         <div class="row" style="margin-bottom:8px">
           <button class="ghost" style="padding:7px" onclick="qSlot('b',0.5)">½</button>
@@ -460,7 +505,7 @@ small.m{color:var(--mut)}
         </div>
       </div>
 
-      <hr style="border:0;border-top:1px solid rgba(255,255,255,.1);margin:12px 0">
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:12px 0">
 
       <div>
         <small class="m">درخواست برداشت (حداقل ۵۰ استارز • ۱۰٪ مالیات کسر می‌شود):</small>
@@ -521,6 +566,16 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
+      <h3>🌐 افزایش / کاهش سکه برای همه کاربران</h3>
+      <small class="m" style="display:block;margin-bottom:8px">مقدار مثبت به همه اضافه می‌کند و مقدار منفی از همه کم می‌کند (موجودی زیر ۰ نمی‌رود).</small>
+      <input id="bulkAmt" type="number" placeholder="مقدار سکه (مثلاً 10 یا -10)">
+      <div class="row" style="margin-top:8px">
+        <button class="g" onclick="adminBulkCoins(1)">اضافه به همه</button>
+        <button class="r" onclick="adminBulkCoins(-1)">کم کردن از همه</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>💸 درخواست‌های برداشت در انتظار تایید</h3>
       <div id="awithdrawals"></div>
     </div>
@@ -532,11 +587,10 @@ small.m{color:var(--mut)}
         <input id="smax" placeholder="حداکثر ضریب">
       </div>
       <div class="row" style="margin:8px 0">
-        <input id="sedge" placeholder="لبه (مثلاً 0.05)">
-        <input id="sgreed" placeholder="میزان طمع 0 تا 1 (مثلاً 0.58)">
+        <input id="sedge" placeholder="لبه (مثلاً 0.08)">
+        <input id="sgreed" placeholder="میزان طمع 0 تا 1 (مثلاً 0.42)">
       </div>
       <div class="row" style="margin-bottom:8px">
-        <input id="sstart" placeholder="استارز شروع کاربران جدید">
         <input id="spool" placeholder="بودجه بونوس و ماموریت">
       </div>
       <button style="width:100%" onclick="adminSettings()">ذخیره تنظیمات</button>
@@ -597,7 +651,7 @@ document.addEventListener('pointermove', e => {
   const r = el.getBoundingClientRect();
   const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
   const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
-  el.style.transform = `perspective(750px) rotateX(${(-dy * 6.5).toFixed(2)}deg) rotateY(${(dx * 6.5).toFixed(2)}deg) translateZ(6px)`;
+  el.style.transform = `perspective(750px) rotateX(${(-dy * 5.5).toFixed(2)}deg) rotateY(${(dx * 5.5).toFixed(2)}deg) translateZ(5px)`;
 });
 document.addEventListener('pointerout', e => {
   const el = e.target.closest('.card, .banner');
@@ -625,11 +679,11 @@ const ms2t = ms => {
 };
 
 function multClass(v) {
-  if (v >= 25) return 'm-rainbow';
-  if (v >= 10) return 'm-yellow';
-  if (v >= 5) return 'm-purple';
+  if (v >= 15) return 'm-rainbow';
+  if (v >= 8) return 'm-yellow';
+  if (v >= 4.5) return 'm-purple';
   if (v >= 2) return 'm-blue';
-  if (v >= 1.5) return 'm-green';
+  if (v >= 1.45) return 'm-green';
   return 'm-plain';
 }
 
@@ -707,7 +761,7 @@ function renderMissionsAndStreak(u) {
 
   const ab = $('mArenaBtn');
   if (m.claimedArena) { ab.textContent = 'دریافت شده ✅'; ab.disabled = true; ab.className = 'ghost'; }
-  else if (aProg >= 2) { ab.textContent = 'دریافت 1.5 ⭐'; ab.disabled = false; cb.className = 'g'; }
+  else if (aProg >= 2) { ab.textContent = 'دریافت 1.5 ⭐'; ab.disabled = false; ab.className = 'g'; }
   else { ab.textContent = `${aProg}/2`; ab.disabled = true; ab.className = 'ghost'; }
 }
 async function claimMission(mission) {
@@ -839,7 +893,7 @@ function draw() {
     sub.textContent = 'منفجر شد';
   }
 
-  const prog = c.phase === 'bet' ? 0 : Math.min(1, Math.log(Math.max(1.0001, m)) / Math.log(12));
+  const prog = c.phase === 'bet' ? 0 : Math.min(1, Math.log(Math.max(1.0001, m)) / Math.log(8));
   const px = 44 + prog * (W - 124), py = H - 44 - prog * (H - 124) * 0.85;
   cx.strokeStyle = '#35e0ff'; cx.lineWidth = 5;
   cx.beginPath(); cx.moveTo(44, H - 44); cx.quadraticCurveTo(44 + (px - 44) * .6, H - 44, px, py); cx.stroke();
@@ -860,9 +914,12 @@ function renderCrash() {
   const histHtml = c.history.map(h => `<span class="${multClass(h)}">${h.toFixed(2)}x</span>`).join('');
   $('hist').innerHTML = histHtml;
   $('ghist').innerHTML = histHtml || '<small class="m">هنوز ضریبی ثبت نشده</small>';
-  $('plist').innerHTML = c.players.map(p =>
-    `<div class="pl"><span>${p.name}</span><span>⭐ ${p.amount} ${p.cashed ? '<b class="pill-ok">' + p.cashed + 'x</b>' : ''}</span></div>`
-  ).join('') || '<small class="m">هنوز کسی شرط نبسته</small>';
+  $('plist').innerHTML = c.players.map(p => {
+    const winPart = p.cashed
+      ? ` <b class="pill-ok">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} ⭐</b>`
+      : '';
+    return `<div class="pl"><span>${p.name}</span><span>شرط: ⭐ ${p.amount}${winPart}</span></div>`;
+  }).join('') || '<small class="m">هنوز کسی شرط نبسته</small>';
 }
 
 const ARENA_COLS = ['#35e0ff', '#ffc94d', '#c084fc', '#3ddc97', '#ff5d7a', '#7c5cff'];
@@ -1051,8 +1108,8 @@ async function loadAdmin() {
   adminCache = d;
   const s = d.settings;
   $('smin').value = s.minMult; $('smax').value = s.maxMult;
-  $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.58;
-  $('sstart').value = s.startCoins; $('spool').value = d.promoPool ?? 0;
+  $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
+  $('spool').value = d.promoPool ?? 0;
   $('aq').value = s.queue.join(' ');
 
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
@@ -1083,7 +1140,7 @@ function showAdminUser(uid) {
   $('aid').value = u.username ? '@' + u.username : u.id;
   const txs = (u.txs || []).slice(0, 8).map(t => `<div class="pl"><span>${t.note}</span><b class="${t.amount >= 0 ? 'pill-ok' : 'pill-bad'}">${t.amount >= 0 ? '+' : ''}${t.amount} ⭐</b></div>`).join('') || '<small class="m">بدون تراکنش</small>';
   const gls = (u.gameLogs || []).slice(0, 8).map(g => `<div class="pl"><span>${g.detail}</span><b class="${g.delta >= 0 ? 'pill-ok' : 'pill-bad'}">${g.delta >= 0 ? '+' : ''}${g.delta} ⭐</b></div>`).join('') || '<small class="m">بدون بازی</small>';
-  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(7,11,28,.85)">
+  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.58)">
     <h3>سابقه ${u.name} (${u.id}) — موجودی: ${fmt(u.coins)} ⭐ • رفرال: ${u.refCount || 0} نفر</h3>
     <small class="m">سابقه مالی:</small>${txs}
     <small class="m" style="display:block;margin-top:8px">سابقه بازی‌ها:</small>${gls}
@@ -1091,13 +1148,22 @@ function showAdminUser(uid) {
 }
 async function decideWd(id, action, method = 'stars') { await api('admin/withdraw', { id, action, method }); toast('ثبت شد'); loadAdmin(); poll(); }
 async function adminCoins() { await api('admin/coins', { id: $('aid').value, amount: $('aamt').value }); toast('موجودی اعمال شد'); loadAdmin(); poll(); }
+async function adminBulkCoins(sign) {
+  const raw = Math.abs(Number($('bulkAmt').value || 0));
+  if (!raw) return toast('مقدار معتبر وارد کنید');
+  const amount = sign * raw;
+  const r = await api('admin/bulk_coins', { amount });
+  toast(`روی ${r.updatedCount} کاربر اعمال شد`);
+  loadAdmin();
+  poll();
+}
 async function adminBan(b) { await api('admin/ban', { id: $('aid').value, banned: b }); toast('انجام شد'); loadAdmin(); }
 async function adminQueue() { await api('admin/queue', { queue: $('aq').value.split(/[\s,]+/).filter(Boolean) }); toast('صف ذخیره شد'); }
 async function adminSettings() {
   await api('admin/settings', {
     minMult: $('smin').value, maxMult: $('smax').value,
     edge: $('sedge').value, greed: $('sgreed').value,
-    startCoins: $('sstart').value, promoPool: $('spool').value
+    startCoins: 0, promoPool: $('spool').value
   });
   toast('تنظیمات ذخیره شد');
   poll();
