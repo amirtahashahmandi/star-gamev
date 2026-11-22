@@ -324,6 +324,18 @@ small.m{color:var(--mut)}
 .pill-ok{color:var(--ok);font-weight:700}
 .pill-bad{color:var(--bad);font-weight:700}
 .pill-wait{color:var(--gold);font-weight:700}
+.fraud-box{
+  border:1px solid rgba(255,93,122,.55);
+  background:rgba(255,93,122,.12);
+  border-radius:14px;padding:10px;margin:8px 0;font-size:12px
+}
+.audit-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;font-size:12px
+}
+.audit-grid div{
+  background:rgba(10,16,44,.45);border:1px solid rgba(155,190,255,.18);
+  border-radius:10px;padding:7px
+}
 </style>
 </head>
 <body>
@@ -647,7 +659,7 @@ small.m{color:var(--mut)}
 
     <div class="card">
       <h3>💸 درخواست‌های برداشت TON در انتظار تایید</h3>
-      <small class="m" style="display:block;margin-bottom:8px">می‌توانید برای هر درخواست یک پیام اختیاری بنویسید یا خالی بگذارید تا فقط پیام وضعیت ارسال شود.</small>
+      <small class="m" style="display:block;margin-bottom:8px">هشدار ضدتقلب به صورت خودکار گردش بازی، واریزها و شارژهای دستی کاربر را بررسی می‌کند.</small>
       <div id="awithdrawals"></div>
     </div>
 
@@ -674,7 +686,7 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>👥 کاربران، موجودی TON و سابقه هر کاربر</h3>
+      <h3>👥 کاربران، حسابرسی تراز و سابقه کامل هر کاربر</h3>
       <div id="ausers"></div>
       <div id="auserDetail" style="margin-top:10px"></div>
     </div>
@@ -1309,7 +1321,7 @@ async function lbTab(k, b) {
   ).join('') || '<small class="m">هنوز داده‌ای نیست</small>';
 }
 
-let adminCache = null;
+let adminCache = null, selectedAdminUserId = '', adminTxFilter = 'all';
 async function loadAdmin() {
   const d = await api('admin/users');
   adminCache = d;
@@ -1338,25 +1350,103 @@ async function loadAdmin() {
   `).join('') || '<small class="m">ماموریتی وجود ندارد</small>';
 
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
-  $('awithdrawals').innerHTML = pending.map(w => `
-    <div class="pl" style="flex-direction:column;align-items:stretch;gap:6px">
+  $('awithdrawals').innerHTML = pending.map(w => {
+    const reasons = (w.riskReasons && w.riskReasons.length) ? w.riskReasons : [];
+    const riskHtml = w.suspicious
+      ? `<div class="fraud-box"><div class="pill-bad">⚠️ هشدار برداشت مشکوک:</div>${reasons.map(r => `<div>• ${r}</div>`).join('')}</div>`
+      : `<div style="font-size:11px;color:var(--ok)">✅ بررسی خودکار: مشکوک نیست</div>`;
+    return `<div class="pl" style="flex-direction:column;align-items:stretch;gap:6px">
       <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}${w.uid})</div>
       <div style="font-size:12px">درخواستی: <b>${fmt(w.gross)} TON</b> | مالیات ۱۰٪: <b>${fmt(w.tax)} TON</b> | خالص: <b class="pill-ok">${fmt(w.net)} TON</b></div>
       <div style="font-size:12px;color:var(--mut);direction:ltr;text-align:right">TON: <b>${w.tonAddress ? w.tonAddress : 'وارد نشده'}</b></div>
+      ${riskHtml}
       <input id="wdMsg_${w.id}" type="text" placeholder="پیام اختیاری برای کاربر (خالی بماند ارسال نمی‌شود)">
       <div class="row">
         <button class="g" style="padding:7px" onclick="decideWd('${w.id}','approve')">تایید برداشت TON</button>
         <button class="r" style="padding:7px" onclick="decideWd('${w.id}','reject')">رد و برگشت TON</button>
       </div>
-    </div>
-  `).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
+    </div>`;
+  }).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
 
-  $('ausers').innerHTML = d.users.map(u => `
-    <div class="pl" style="cursor:pointer" onclick="showAdminUser('${u.id}')">
-      <span>${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • ⚡${u.streak || 0}</small></span>
+  $('ausers').innerHTML = d.users.map(u => {
+    const hasFlag = !!(u.audit && u.audit.flags && u.audit.flags.length);
+    return `<div class="pl" style="cursor:pointer" onclick="showAdminUser('${u.id}')">
+      <span>${hasFlag ? '⚠️ ' : ''}${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • گردش: ${fmt(u.wagered || 0)}</small></span>
       <span>💎 <b>${fmt(u.coins)} TON</b> ${u.banned ? '🚫' : ''}</span>
+    </div>`;
+  }).join('');
+
+  if (selectedAdminUserId) showAdminUser(selectedAdminUserId);
+}
+
+function setAdminTxFilter(filter, uid) {
+  adminTxFilter = filter;
+  showAdminUser(uid);
+}
+
+function showAdminUser(uid) {
+  if (!adminCache) return;
+  selectedAdminUserId = uid;
+  const u = adminCache.users.find(x => x.id === uid);
+  if (!u) return;
+  $('aid').value = u.username ? '@' + u.username : u.id;
+  const a = u.audit || {};
+  const flagsHtml = (a.flags && a.flags.length)
+    ? `<div class="fraud-box"><div class="pill-bad">⚠️ مغایرت / هشدار حسابرسی:</div>${a.flags.map(f => `<div>• ${f}</div>`).join('')}</div>`
+    : `<div style="font-size:12px;color:var(--ok);margin:6px 0">✅ تراز حساب مطابقت دارد</div>`;
+
+  const allTxs = u.txs || [];
+  const filteredTxs = allTxs.filter(t => {
+    if (adminTxFilter === 'all') return true;
+    if (adminTxFilter === 'in') return Number(t.amount || 0) > 0;
+    if (adminTxFilter === 'out') return Number(t.amount || 0) < 0;
+    if (adminTxFilter === 'admin') return ['admin_coins', 'admin_bulk', 'tg_admin_coins'].includes(t.source);
+    return true;
+  });
+
+  const txsHtml = filteredTxs.slice(0, 40).map(t => {
+    const amt = Number(t.amount || 0);
+    const cls = amt >= 0 ? 'pill-ok' : 'pill-bad';
+    const balStep = (t.before !== undefined && t.after !== undefined)
+      ? `<small class="m">قبل: ${fmt(t.before)} → بعد: ${fmt(t.after)} • منبع: ${t.source || '—'}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
+      : `<small class="m">منبع: ${t.source || '—'}</small>`;
+    return `<div class="pl">
+      <div><div>${t.note}</div>${balStep}</div>
+      <b class="${cls}">${amt >= 0 ? '+' : ''}${fmt(amt)} TON</b>
+    </div>`;
+  }).join('') || '<small class="m">تراکنشی در این فیلتر یافت نشد</small>';
+
+  const glsHtml = (u.gameLogs || []).slice(0, 30).map(g => {
+    const cls = g.delta >= 0 ? 'pill-ok' : 'pill-bad';
+    return `<div class="pl">
+      <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
+      <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
+    </div>`;
+  }).join('') || '<small class="m">بدون بازی</small>';
+
+  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.68)">
+    <h3>حسابرسی ${u.name} (${u.id})</h3>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:6px">موجودی فعلی: <b>${fmt(u.coins)} TON</b> • رفرال: <b>${u.refCount || 0}</b> • آخرین IP: <b>${u.lastIp || '—'}</b></div>
+    ${flagsHtml}
+    <div class="audit-grid">
+      <div>واریز TON: <b>${fmt(a.tonDeposits)}</b></div>
+      <div>تغییر ادمین: <b>${fmt(a.adminAdjustments)}</b></div>
+      <div>بونوس/ماموریت/گردونه: <b>${fmt(a.promoRewards)}</b></div>
+      <div>رفرال: <b>${fmt(a.referralRewards)}</b></div>
+      <div>گردش شرط‌ها: <b>${fmt(a.wagered)}</b></div>
+      <div>مجموع بردها: <b>${fmt(a.won)}</b></div>
+      <div>برداشت ثبت‌شده: <b>${fmt(a.withdrawGross)}</b></div>
+      <div>اختلاف تراز: <b class="${Math.abs(a.discrepancy || 0) > 0.001 ? 'pill-bad' : 'pill-ok'}">${fmt(a.discrepancy)}</b></div>
     </div>
-  `).join('');
+    <div class="sub" style="margin-top:10px">
+      <button class="${adminTxFilter === 'all' ? 'on' : ''}" onclick="setAdminTxFilter('all','${u.id}')">همه (${allTxs.length})</button>
+      <button class="${adminTxFilter === 'in' ? 'on' : ''}" onclick="setAdminTxFilter('in','${u.id}')">ورودی‌ها (+)</button>
+      <button class="${adminTxFilter === 'out' ? 'on' : ''}" onclick="setAdminTxFilter('out','${u.id}')">خروجی‌ها (-)</button>
+      <button class="${adminTxFilter === 'admin' ? 'on' : ''}" onclick="setAdminTxFilter('admin','${u.id}')">ادمین</button>
+    </div>
+    ${txsHtml}
+    <small class="m" style="display:block;margin-top:10px">سابقه بازی‌ها:</small>${glsHtml}
+  </div>`;
 }
 
 async function adminBroadcast() {
@@ -1429,19 +1519,6 @@ async function adminRemoveMission(id) {
   poll();
 }
 
-function showAdminUser(uid) {
-  if (!adminCache) return;
-  const u = adminCache.users.find(x => x.id === uid);
-  if (!u) return;
-  $('aid').value = u.username ? '@' + u.username : u.id;
-  const txs = (u.txs || []).slice(0, 8).map(t => `<div class="pl"><span>${t.note}</span><b class="${t.amount >= 0 ? 'pill-ok' : 'pill-bad'}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} TON</b></div>`).join('') || '<small class="m">بدون تراکنش</small>';
-  const gls = (u.gameLogs || []).slice(0, 8).map(g => `<div class="pl"><span>${g.detail}</span><b class="${g.delta >= 0 ? 'pill-ok' : 'pill-bad'}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b></div>`).join('') || '<small class="m">بدون بازی</small>';
-  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.58)">
-    <h3>سابقه ${u.name} (${u.id}) — موجودی: ${fmt(u.coins)} TON • رفرال: ${u.refCount || 0} نفر</h3>
-    <small class="m">سابقه مالی:</small>${txs}
-    <small class="m" style="display:block;margin-top:8px">سابقه بازی‌ها:</small>${gls}
-  </div>`;
-}
 async function decideWd(id, action) {
   const noteEl = document.getElementById('wdMsg_' + id);
   const note = noteEl ? String(noteEl.value || '').trim() : '';

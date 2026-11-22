@@ -1,4 +1,4 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.2)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.3 + Full Ledger Audit)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
@@ -7,7 +7,6 @@ const ARENA_TIERS = [0.1, 0.5, 2], FEE = 0.05, ARENA_WAIT = 20000;
 const MIN_BET = 0.01;
 const MAX_BET = 50;
 
-// Wheel probabilities: 0.01 TON -> 99%, 0.1 TON -> 1%, 0.02 TON -> shown on wheel (0% random draw)
 const WHEEL = [
   { v: 0.01, w: 99 },
   { v: 0.1, w: 1 },
@@ -17,7 +16,6 @@ const WHEEL = [
 const SHIELD_RATE = 0.15, SHIELD_MAX_MULT = 1.15, SHIELD_REFUND = 0.50;
 const STREAK_MILESTONE = 3, STREAK_REWARD = 0.015;
 
-// Default Tonkeeper Deposit Config (editable in Admin Panel)
 const DEFAULT_TON_DEPOSIT_ADDR = 'EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu';
 const DEFAULT_TON_DEPOSIT_MEMO = '398101056984149';
 
@@ -148,6 +146,8 @@ export default {
 export class Game {
   constructor(state, env) {
     this.state = state; this.env = env;
+    this.ctxIp = '';
+    this.ctxUa = '';
     this.ready = state.blockConcurrencyWhile(() => this.load());
   }
   async load() {
@@ -195,6 +195,8 @@ export class Game {
       if (!u.arenaEntries) u.arenaEntries = 0;
       if (!u.highMultStreak) u.highMultStreak = 0;
       if (!Array.isArray(u.claimedMissions)) u.claimedMissions = [];
+      if (!u.lastIp) u.lastIp = '';
+      if (!u.lastUa) u.lastUa = '';
       this.users[k.slice(2)] = u;
     }
     this.dU = new Set(); this.dM = false;
@@ -221,19 +223,138 @@ export class Game {
       this.saveMeta();
     }
   }
-  payoutFromPool(u, requestedAmount, note) {
+
+  applyBalance(u, delta, source, note, status = 'completed', opts = {}) {
+    const d = r4(delta);
+    const before = r4(u.coins || 0);
+    const after = Math.max(0, r4(before + d));
+    const actualDelta = r4(after - before);
+    u.coins = after;
+
+    if (opts.countWon && actualDelta > 0) u.won = r4((u.won || 0) + actualDelta);
+    if (opts.countWager && d < 0) u.wagered = r4((u.wagered || 0) + Math.abs(d));
+
+    if (!Array.isArray(u.txs)) u.txs = [];
+    u.txs.unshift({
+      id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      type: actualDelta >= 0 ? 'deposit' : 'withdraw',
+      source: source || 'general',
+      amount: actualDelta,
+      before,
+      after,
+      ip: this.ctxIp || u.lastIp || '',
+      note,
+      status,
+      at: Date.now()
+    });
+    u.txs = u.txs.slice(0, 120);
+    this.touch(u);
+    return actualDelta;
+  }
+
+  payoutFromPool(u, requestedAmount, note, source = 'promo_pool') {
     const want = r4(Math.max(0, requestedAmount));
     if (want <= 0) return 0;
     const available = r4(Math.max(0, this.meta.promoPool || 0));
     const granted = r4(Math.min(want, available));
     if (granted <= 0) return 0;
     this.meta.promoPool = r4(available - granted);
-    u.coins = r4(u.coins + granted);
-    u.won = r4(u.won + granted);
-    this.addTx(u, 'deposit', granted, note + (granted < want ? ' (سهمیه بودجه بونوس)' : ''));
-    this.touch(u);
+    this.applyBalance(
+      u,
+      granted,
+      source,
+      note + (granted < want ? ' (سهمیه بودجه بونوس)' : ''),
+      'completed',
+      { countWon: true }
+    );
     this.saveMeta();
     return granted;
+  }
+
+  auditUser(u) {
+    let tonDeposits = 0;
+    let adminAdjustments = 0;
+    let promoRewards = 0;
+    let referralRewards = 0;
+    let gameNetDelta = 0;
+    let withdrawGross = 0;
+    let withdrawRefunds = 0;
+
+    for (const t of (u.txs || [])) {
+      const amt = r4(t.amount || 0);
+      const src = t.source || '';
+      if (src === 'ton_deposit') {
+        tonDeposits = r4(tonDeposits + amt);
+      } else if (src === 'admin_coins' || src === 'admin_bulk' || src === 'tg_admin_coins') {
+        adminAdjustments = r4(adminAdjustments + amt);
+      } else if (src === 'mission' || src === 'streak' || src === 'wheel' || src === 'tag' || src === 'promo_pool') {
+        promoRewards = r4(promoRewards + amt);
+      } else if (src === 'referral') {
+        referralRewards = r4(referralRewards + amt);
+      } else if (src === 'withdraw') {
+        if (t.status === 'rejected') {
+          withdrawRefunds = r4(withdrawRefunds + Math.abs(amt));
+        } else {
+          withdrawGross = r4(withdrawGross + Math.abs(amt));
+        }
+      } else if (src === 'withdraw_refund') {
+        withdrawRefunds = r4(withdrawRefunds + amt);
+      } else {
+        gameNetDelta = r4(gameNetDelta + amt);
+      }
+    }
+
+    const totalIn = r4(tonDeposits + adminAdjustments + promoRewards + referralRewards + Math.max(0, gameNetDelta) + withdrawRefunds);
+    const totalOut = r4(withdrawGross + Math.abs(Math.min(0, gameNetDelta)));
+    const expectedCoins = r4(Math.max(0, totalIn - totalOut));
+    const currentCoins = r4(u.coins || 0);
+    const discrepancy = r4(currentCoins - expectedCoins);
+    const wagered = r4(u.wagered || 0);
+    const won = r4(u.won || 0);
+
+    const flags = [];
+    if (Math.abs(discrepancy) > 0.001) {
+      flags.push(`اختلاف تراز: موجودی فعلی ${fmtTon(currentCoins)} در برابر انتظار ${fmtTon(expectedCoins)} TON`);
+    }
+    if (wagered < 0.05 && (currentCoins + withdrawGross) >= 0.2) {
+      flags.push(`حجم شرط‌بندی بسیار پایین (${fmtTon(wagered)} TON) نسبت به موجودی/برداشت`);
+    }
+    if (adminAdjustments >= 0.2 && wagered < adminAdjustments * 0.5) {
+      flags.push(`شارژ دستی زیاد (${fmtTon(adminAdjustments)} TON) با گردش بازی کم (${fmtTon(wagered)} TON)`);
+    }
+
+    return {
+      tonDeposits,
+      adminAdjustments,
+      promoRewards,
+      referralRewards,
+      gameNetDelta,
+      withdrawGross,
+      totalIn,
+      totalOut,
+      expectedCoins,
+      currentCoins,
+      discrepancy,
+      wagered,
+      won,
+      flags
+    };
+  }
+
+  assessWithdrawalRisk(u, amount) {
+    const a = this.auditUser(u);
+    const reasons = [...a.flags];
+    if (a.wagered < r4(amount * 0.5)) {
+      reasons.push(`مجموع شرط‌ها (${fmtTon(a.wagered)} TON) کمتر از نصف مبلغ برداشت (${fmtTon(amount)} TON) است`);
+    }
+    if (a.tonDeposits === 0 && a.adminAdjustments > 0) {
+      reasons.push(`واریز آن‌چین TON ثبت نشده ولی شارژ دستی ادمین (${fmtTon(a.adminAdjustments)} TON) وجود دارد`);
+    }
+    return {
+      suspicious: reasons.length > 0,
+      reasons,
+      audit: a
+    };
   }
 
   missionProgress(u, m) {
@@ -259,22 +380,13 @@ export class Game {
     return prog >= target && curStreak >= minStreak;
   }
 
-  addTx(u, type, amount, note, status = 'completed') {
-    if (!Array.isArray(u.txs)) u.txs = [];
-    u.txs.unshift({
-      id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      type, amount: r4(amount), note, status, at: Date.now()
-    });
-    u.txs = u.txs.slice(0, 60);
-    this.touch(u);
-  }
   addGameLog(u, game, detail, delta) {
     if (!Array.isArray(u.gameLogs)) u.gameLogs = [];
     u.gameLogs.unshift({
       id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       game, detail, delta: r4(delta), at: Date.now()
     });
-    u.gameLogs = u.gameLogs.slice(0, 60);
+    u.gameLogs = u.gameLogs.slice(0, 120);
     this.touch(u);
   }
   rewardReferrer(user, baseAmount, pct, reason) {
@@ -283,9 +395,8 @@ export class Game {
     if (!inviter || inviter.id === user.id) return;
     const bonus = r4(baseAmount * pct);
     if (bonus <= 0) return;
-    inviter.coins = r4(inviter.coins + bonus);
     inviter.refEarned = r4((inviter.refEarned || 0) + bonus);
-    this.addTx(inviter, 'deposit', bonus, `${reason} (${user.name})`);
+    this.applyBalance(inviter, bonus, 'referral', `${reason} (${user.name})`, 'completed', { countWon: true });
     this.touch(inviter);
   }
   findUserByQuery(q) {
@@ -352,7 +463,8 @@ export class Game {
         games: 0, bestMult: 0, lastWheel: 0, lastTag: 0, banned: false, created: Date.now(),
         name: '', username: '', photo: '', txs: [], gameLogs: [],
         refBy: '', refCount: 0, refEarned: 0, streak: 0, bestStreak: 0,
-        arenaEntries: 0, highMultStreak: 0, claimedMissions: []
+        arenaEntries: 0, highMultStreak: 0, claimedMissions: [],
+        lastIp: this.ctxIp || '', lastUa: this.ctxUa || ''
       };
       this.touch(u);
     }
@@ -360,6 +472,14 @@ export class Game {
     const uname = tg.username || '';
     if (u.name !== name || u.username !== uname || (tg.photo_url && u.photo !== tg.photo_url)) {
       u.name = name; u.username = uname; u.photo = tg.photo_url || u.photo || '';
+      this.touch(u);
+    }
+    if (this.ctxIp && u.lastIp !== this.ctxIp) {
+      u.lastIp = this.ctxIp;
+      this.touch(u);
+    }
+    if (this.ctxUa && u.lastUa !== this.ctxUa) {
+      u.lastUa = this.ctxUa;
       this.touch(u);
     }
     if (isNew && refParam) {
@@ -418,8 +538,8 @@ export class Game {
       },
       refCount: u.refCount || 0,
       refEarned: r4(u.refEarned || 0),
-      txs: (u.txs || []).slice(0, 30),
-      gameLogs: (u.gameLogs || []).slice(0, 30),
+      txs: (u.txs || []).slice(0, 40),
+      gameLogs: (u.gameLogs || []).slice(0, 40),
       withdrawals: this.meta.withdrawals.filter(w => w.uid === u.id).slice(0, 20)
     };
   }
@@ -463,7 +583,7 @@ export class Game {
     u.streak = (u.streak || 0) + 1;
     u.bestStreak = Math.max(u.bestStreak || 0, u.streak);
     if (u.streak > 0 && u.streak % STREAK_MILESTONE === 0) {
-      const reward = this.payoutFromPool(u, STREAK_REWARD, `جایزه برد متوالی (${u.streak} برد پیاپی)`);
+      const reward = this.payoutFromPool(u, STREAK_REWARD, `جایزه برد متوالی (${u.streak} برد پیاپی)`, 'streak');
       if (reward > 0) {
         this.addXp(u, 0.4);
         this.addGameLog(u, 'streak', `زنجیره ${u.streak} برد متوالی`, reward);
@@ -487,8 +607,7 @@ export class Game {
     const win = r4(slot.amount * slot.cashed);
     slot.winAmount = win;
     const profit = r4(win - slot.amount);
-    u.coins = r4(u.coins + win);
-    u.won = r4(u.won + win);
+    this.applyBalance(u, win, 'crash_win', `برد کرش (${slotLabel}) در ضریب ${slot.cashed}x`, 'completed', { countWon: true });
     u.wins += 1;
     u.bestMult = Math.max(u.bestMult, slot.cashed);
 
@@ -501,7 +620,6 @@ export class Game {
     this.recordWinStreak(u);
     this.addXp(u, slot.amount * 2 + 0.1);
     this.addGameLog(u, 'crash', `برد ${slotLabel} در ضریب ${slot.cashed}x (شرط ${fmtTon(slot.amount)} TON)`, profit);
-    this.addTx(u, 'deposit', win, `برد کرش (${slotLabel}) در ضریب ${slot.cashed}x`);
     this.touch(u);
   }
 
@@ -511,8 +629,7 @@ export class Game {
     let refund = 0;
     if (slot.shield && crashAt < SHIELD_MAX_MULT) {
       refund = r4(slot.amount * SHIELD_REFUND);
-      u.coins = r4(u.coins + refund);
-      this.addTx(u, 'deposit', refund, `بازگشت ۵۰٪ شرط با سپر ضد انفجار (انفجار در ${crashAt}x)`);
+      this.applyBalance(u, refund, 'crash_shield_refund', `بازگشت ۵۰٪ شرط با سپر ضد انفجار (انفجار در ${crashAt}x)`);
     }
     this.resetStreak(u);
     const netDelta = r4(-(slot.amount + shieldFee) + refund);
@@ -595,13 +712,11 @@ export class Game {
         const w = a.players[winIdx];
         const wu = this.users[w.id];
         if (wu) {
-          wu.coins = r4(wu.coins + prize);
-          wu.won = r4(wu.won + prize);
+          this.applyBalance(wu, prize, 'arena_win', `جایزه آرنا ${fmtTon(a.entry)} TON`, 'completed', { countWon: true });
           wu.wins++;
           this.recordWinStreak(wu);
           this.addXp(wu, a.entry * 5);
           this.addGameLog(wu, 'arena', `برنده آرنا ${fmtTon(a.entry)} TON (${a.players.length} نفر)`, r4(prize - a.entry));
-          this.addTx(wu, 'deposit', prize, `جایزه آرنا ${fmtTon(a.entry)} TON`);
           this.touch(wu);
         }
         a.players.forEach(p => {
@@ -629,6 +744,8 @@ export class Game {
 
   async fetch(req) {
     await this.ready;
+    this.ctxIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || '';
+    this.ctxUa = (req.headers.get('user-agent') || '').slice(0, 120);
     const url = new URL(req.url);
     if (url.pathname.startsWith('/setup/')) return this.setup(url);
     if (url.pathname.startsWith('/tg/')) return this.webhook(req, url);
@@ -671,8 +788,7 @@ export class Game {
           const t = this.findUserByQuery(a[0]), n = Number(a[1]);
           if (t && isFinite(n) && n > 0) {
             const delta = cmd === '/give' ? r4(n) : r4(-n);
-            t.coins = Math.max(0, r4(t.coins + delta));
-            this.addTx(t, delta >= 0 ? 'admin_add' : 'admin_sub', delta, 'تغییر موجودی TON توسط ادمین (بات)');
+            this.applyBalance(t, delta, 'tg_admin_coins', 'تغییر موجودی TON توسط ادمین (بات)');
             this.touch(t);
             await this.tg('sendMessage', { chat_id: id, text: `${t.name}: ${fmtTon(t.coins)} TON` });
           }
@@ -813,12 +929,17 @@ export class Game {
         const entry = c.bets[u.id] || { a: null, b: null };
         if (entry[slotKey]) return bad('این پنل شرط در این دور قبلاً ثبت شده است');
 
-        u.coins = Math.max(0, r4(u.coins - totalCost));
-        u.wagered = r4(u.wagered + amt);
+        this.applyBalance(
+          u,
+          -totalCost,
+          'crash_bet',
+          `شرط ${slotKey === 'a' ? '۱' : '۲'} کرش دور #${c.id}${useShield ? ` (+سپر ${fmtTon(shieldFee)} TON)` : ''}`,
+          'completed',
+          { countWager: true }
+        );
         u.games++;
         if (shieldFee > 0) this.fundPromoPool(shieldFee * 0.45);
         this.addXp(u, amt * 2 + 0.1);
-        this.addTx(u, 'admin_sub', -totalCost, `شرط ${slotKey === 'a' ? '۱' : '۲'} کرش دور #${c.id}${useShield ? ` (+سپر ${fmtTon(shieldFee)} TON)` : ''}`);
         this.rewardReferrer(u, amt, 0.005, 'پاداش ۰.۵٪ بازی کرش زیرمجموعه');
 
         entry[slotKey] = {
@@ -854,7 +975,7 @@ export class Game {
         if (!this.isMissionClaimable(u, m)) {
           return bad('شرایط تکمیل این ماموریت هنوز فراهم نشده است');
         }
-        const paid = this.payoutFromPool(u, m.reward, `جایزه ماموریت: ${m.title}`);
+        const paid = this.payoutFromPool(u, m.reward, `جایزه ماموریت: ${m.title}`, 'mission');
         if (paid <= 0) return bad('بودجه بونوس فعلاً تکمیل شده است');
         u.claimedMissions = [...(u.claimedMissions || []), m.id];
         this.addXp(u, 0.5);
@@ -872,11 +993,9 @@ export class Game {
         if (a.players.some(p => p.id === u.id)) return bad('قبلاً وارد شده‌اید');
         if (a.endAt && a.endAt - now < 1200) return bad('دور در حال پایان است');
         if (r4(u.coins) < a.entry) return bad('موجودی TON کافی نیست');
-        u.coins = Math.max(0, r4(u.coins - a.entry));
-        u.wagered = r4(u.wagered + a.entry);
+        this.applyBalance(u, -a.entry, 'arena_join', `ورودی آرنا ${fmtTon(a.entry)} TON`, 'completed', { countWager: true });
         u.arenaEntries = (u.arenaEntries || 0) + 1;
         a.players.push({ id: u.id, name: u.name });
-        this.addTx(u, 'admin_sub', -a.entry, `ورودی آرنا ${fmtTon(a.entry)} TON`);
         this.rewardReferrer(u, a.entry, 0.005, 'پاداش ۰.۵٪ بازی آرنا زیرمجموعه');
         this.touch(u);
         this.saveMeta();
@@ -954,8 +1073,7 @@ export class Game {
         order.completedAt = now;
 
         const creditedTon = r4(Math.max(order.tonAmount, check.tonPaid));
-        u.coins = r4(u.coins + creditedTon);
-        this.addTx(u, 'deposit', creditedTon, `شارژ تاییدشده با Tonkeeper (+${fmtTon(creditedTon)} TON)`);
+        this.applyBalance(u, creditedTon, 'ton_deposit', `شارژ تاییدشده با Tonkeeper (+${fmtTon(creditedTon)} TON)`);
         this.rewardReferrer(u, creditedTon, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
         this.touch(u);
         this.saveMeta();
@@ -982,26 +1100,37 @@ export class Game {
         const tax = r4(amount * 0.10);
         this.fundPromoPool(tax * 0.20);
         const net = r4(amount - tax);
-        u.coins = Math.max(0, r4(u.coins - amount));
+        const risk = this.assessWithdrawalRisk(u, amount);
+
+        this.applyBalance(
+          u,
+          -amount,
+          'withdraw',
+          `درخواست برداشت ${fmtTon(amount)} TON (۱۰٪ مالیات: ${fmtTon(tax)} TON، خالص: ${fmtTon(net)} TON)${tonAddress ? ` • آدرس: ${tonAddress}` : ''}`,
+          'pending'
+        );
+
         const reqId = 'wd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         const item = {
           id: reqId, uid: u.id, name: u.name, username: u.username || '',
           tonAddress,
-          gross: amount, tax, net, status: 'pending', created: now
+          gross: amount, tax, net,
+          suspicious: risk.suspicious,
+          riskReasons: risk.reasons,
+          status: 'pending', created: now
         };
         this.meta.withdrawals.unshift(item);
         this.meta.withdrawals = this.meta.withdrawals.slice(0, 200);
-        this.addTx(
-          u, 'withdraw', -amount,
-          `درخواست برداشت ${fmtTon(amount)} TON (۱۰٪ مالیات: ${fmtTon(tax)} TON، خالص: ${fmtTon(net)} TON)${tonAddress ? ` • آدرس: ${tonAddress}` : ''}`,
-          'pending'
-        );
         this.touch(u);
         this.saveMeta();
+
         if (this.env.ADMIN_ID) {
+          const riskBlock = risk.suspicious
+            ? `\n\n⚠️ هشدار ضدتقلب:\n• ${risk.reasons.join('\n• ')}`
+            : '\n\n✅ وضعیت حسابرسی: عادی';
           await this.tg('sendMessage', {
             chat_id: String(this.env.ADMIN_ID),
-            text: `💸 درخواست برداشت جدید:\nکاربر: ${u.name} (${u.id})\nمبلغ درخواستی: ${fmtTon(amount)} TON\nمالیات ۱۰٪: ${fmtTon(tax)} TON\nقابل پرداخت خالص: ${fmtTon(net)} TON\nآدرس TON: ${tonAddress || 'وارد نشده'}`
+            text: `💸 درخواست برداشت جدید:\nکاربر: ${u.name} (${u.id})\nمبلغ درخواستی: ${fmtTon(amount)} TON\nمالیات ۱۰٪: ${fmtTon(tax)} TON\nقابل پرداخت خالص: ${fmtTon(net)} TON\nآدرس TON: ${tonAddress || 'وارد نشده'}${riskBlock}`
           });
         }
         return json(200, { ok: true, withdrawal: item });
@@ -1010,7 +1139,7 @@ export class Game {
       case 'POST /api/wheel': {
         if (now < u.lastWheel + DAY) return bad('هنوز زمان چرخش نرسیده');
         const v = Math.random() < 0.99 ? 0.01 : 0.1;
-        const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${fmtTon(v)} TON)`);
+        const paid = this.payoutFromPool(u, v, `جایزه گردونه روزانه (${fmtTon(v)} TON)`, 'wheel');
         if (paid <= 0) return bad('بودجه جایزه روزانه فعلاً تکمیل شده است');
         u.lastWheel = now;
         this.addXp(u, 0.25);
@@ -1027,7 +1156,7 @@ export class Game {
         const ch = await this.tg('getChat', { chat_id: u.id });
         if (ch) name = [ch.first_name, ch.last_name].filter(Boolean).join(' ');
         if (!name.toLowerCase().includes(bu.toLowerCase())) return bad(`@${bu} را در اسم پروفایل‌تان بگذارید`);
-        const paid = this.payoutFromPool(u, 0.01, 'جایزه اسم ربات در پروفایل');
+        const paid = this.payoutFromPool(u, 0.01, 'جایزه اسم ربات در پروفایل', 'tag');
         if (paid <= 0) return bad('بودجه جایزه فعلاً تکمیل شده است');
         u.lastTag = now;
         this.addGameLog(u, 'tag', 'جایزه اسم ربات در پروفایل', paid);
@@ -1046,10 +1175,15 @@ export class Game {
         return json(200, {
           users: Object.values(this.users).sort((a, b) => b.created - a.created).slice(0, 200).map(x => ({
             id: x.id, name: x.name, username: x.username, coins: r4(x.coins),
+            wagered: r4(x.wagered || 0), won: r4(x.won || 0),
             refCount: x.refCount || 0, refEarned: r4(x.refEarned || 0),
             streak: x.streak || 0, bestStreak: x.bestStreak || 0,
             arenaEntries: x.arenaEntries || 0, highMultStreak: x.highMultStreak || 0,
-            banned: x.banned, txs: (x.txs || []).slice(0, 20), gameLogs: (x.gameLogs || []).slice(0, 20)
+            lastIp: x.lastIp || '',
+            banned: x.banned,
+            audit: this.auditUser(x),
+            txs: (x.txs || []).slice(0, 120),
+            gameLogs: (x.gameLogs || []).slice(0, 120)
           })),
           withdrawals: this.meta.withdrawals.slice(0, 100),
           promoPool: r4(this.meta.promoPool || 0),
@@ -1080,12 +1214,11 @@ export class Game {
       case 'POST /api/admin/coins': {
         const t = this.findUserByQuery(body.id), amt = r4(body.amount);
         if (!t || !isFinite(amt) || amt === 0) return bad('کاربر (آیدی یا یوزرنیم) یا مقدار TON نامعتبر است');
-        t.coins = Math.max(0, r4(t.coins + amt));
-        this.addTx(t, amt >= 0 ? 'admin_add' : 'admin_sub', amt, 'تغییر دستی موجودی TON توسط ادمین');
+        const actual = this.applyBalance(t, amt, 'admin_coins', 'تغییر دستی موجودی TON توسط ادمین');
         this.touch(t);
         await this.tg('sendMessage', {
           chat_id: t.id,
-          text: `${amt >= 0 ? '➕' : '➖'} ${fmtTon(Math.abs(amt))} TON ${amt >= 0 ? 'به حساب شما اضافه' : 'از حساب شما کم'} شد.\nموجودی فعلی: ${fmtTon(t.coins)} TON`
+          text: `${actual >= 0 ? '➕' : '➖'} ${fmtTon(Math.abs(actual))} TON ${actual >= 0 ? 'به حساب شما اضافه' : 'از حساب شما کم'} شد.\nموجودی فعلی: ${fmtTon(t.coins)} TON`
         });
         return json(200, { ok: true, coins: t.coins });
       }
@@ -1096,20 +1229,13 @@ export class Game {
         const allUsers = Object.values(this.users);
         let count = 0;
         for (const target of allUsers) {
-          const prev = r4(target.coins || 0);
-          const next = Math.max(0, r4(prev + amt));
-          const delta = r4(next - prev);
-          target.coins = next;
-          if (delta !== 0) {
-            this.addTx(
-              target,
-              delta >= 0 ? 'admin_add' : 'admin_sub',
-              delta,
-              delta >= 0 ? `افزایش همگانی توسط ادمین (+${fmtTon(delta)} TON)` : `کاهش همگانی توسط ادمین (${fmtTon(delta)} TON)`
-            );
-          }
-          this.touch(target);
-          count++;
+          const actual = this.applyBalance(
+            target,
+            amt,
+            'admin_bulk',
+            amt >= 0 ? `افزایش همگانی توسط ادمین (+${fmtTon(amt)} TON)` : `کاهش همگانی توسط ادمین (${fmtTon(amt)} TON)`
+          );
+          if (actual !== 0) count++;
         }
         return json(200, { ok: true, updatedCount: count, delta: amt });
       }
@@ -1189,7 +1315,7 @@ export class Game {
           w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
-            const tx = (targetUser.txs || []).find(t => t.status === 'pending' && t.type === 'withdraw' && Math.abs(t.amount) === w.gross);
+            const tx = (targetUser.txs || []).find(t => t.status === 'pending' && t.source === 'withdraw' && Math.abs(t.amount) === w.gross);
             if (tx) {
               tx.status = 'approved';
               tx.note = `${tx.note} • واریز TON تایید شد${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`;
@@ -1207,11 +1333,12 @@ export class Game {
           w.adminNote = adminNote;
           w.decidedAt = now;
           if (targetUser) {
-            targetUser.coins = r4(targetUser.coins + w.gross);
-            this.addTx(
+            const pendingTx = (targetUser.txs || []).find(t => t.status === 'pending' && t.source === 'withdraw' && Math.abs(t.amount) === w.gross);
+            if (pendingTx) pendingTx.status = 'rejected';
+            this.applyBalance(
               targetUser,
-              'deposit',
               w.gross,
+              'withdraw_refund',
               `بازگشت وجه برداشت ردشده (${fmtTon(w.gross)} TON)${adminNote ? ` • پیام ادمین: ${adminNote}` : ''}`
             );
             this.touch(targetUser);
