@@ -610,6 +610,21 @@ small.m{color:var(--mut)}
   </div>
 
   <div class="page" id="p-admin">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div>
+        <h3 style="margin:0">🛠 پنل مدیریت Tonia</h3>
+        <small class="m">مدیریت کاربران، پیام‌ها، مالی و تنظیمات</small>
+      </div>
+      <div class="coins">👥 کل بازیکنان: <span id="admTotalPlayers" class="num-pink">0</span></div>
+    </div>
+
+    <div class="card">
+      <h3>👥 جستجو و مدیریت بازیکنان</h3>
+      <input id="admPlayerSearch" type="text" placeholder="جستجو با آیدی عددی، @یوزرنیم یا نام بازیکن..." oninput="renderAdminPlayersList()">
+      <div id="ausers" style="margin-top:10px;max-height:280px;overflow-y:auto"></div>
+      <div id="auserDetail" style="margin-top:12px"></div>
+    </div>
+
     <div class="card">
       <h3>📢 ارسال پیام همگانی به همه کاربران</h3>
       <small class="m" style="display:block;margin-bottom:8px">این پیام برای همه کاربران ربات در تلگرام ارسال می‌شود.</small>
@@ -655,7 +670,7 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
-      <h3>💰 شارژ / مدیریت کاربر (با آیدی عددی یا @یوزرنیم)</h3>
+      <h3>💰 شارژ / مدیریت سریع کاربر</h3>
       <input id="aid" placeholder="آیدی عددی یا @username کاربر">
       <input id="aamt" type="number" step="0.01" placeholder="مقدار TON (منفی = کم کردن)" style="margin-top:8px">
       <div class="row" style="margin-top:8px">
@@ -701,12 +716,6 @@ small.m{color:var(--mut)}
       <h3>🎲 صف ضریب‌های بعدی کرش</h3>
       <input id="aq" placeholder="مثلاً 1.8 3.5 2.2 12" style="margin-bottom:8px">
       <button style="width:100%" onclick="adminQueue()">ذخیره صف</button>
-    </div>
-
-    <div class="card">
-      <h3>👥 کاربران، حسابرسی تراز و سابقه کامل هر کاربر</h3>
-      <div id="ausers"></div>
-      <div id="auserDetail" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
@@ -1380,9 +1389,40 @@ async function lbTab(k, b) {
 }
 
 let adminCache = null, selectedAdminUserId = '', adminTxFilter = 'all';
+
+function renderAdminPlayersList() {
+  if (!adminCache) return;
+  const q = String(($('admPlayerSearch') && $('admPlayerSearch').value) || '').trim().replace(/^@/, '').toLowerCase();
+  const list = (adminCache.users || []).filter(u => {
+    if (!q) return true;
+    const idMatch = String(u.id || '').toLowerCase().includes(q);
+    const unMatch = String(u.username || '').toLowerCase().includes(q);
+    const nmMatch = String(u.name || '').toLowerCase().includes(q);
+    return idMatch || unMatch || nmMatch;
+  });
+
+  if (!list.length) {
+    $('ausers').innerHTML = '<small class="m">بازیکنی با این مشخصات پیدا نشد</small>';
+    return;
+  }
+
+  $('ausers').innerHTML = list.map((u, i) => {
+    const hasFlag = !!(u.audit && u.audit.flags && u.audit.flags.length);
+    const isSel = selectedAdminUserId === u.id;
+    return `<div class="pl" style="cursor:pointer;${isSel ? 'background:rgba(53,224,255,.12);border-radius:10px' : ''}" onclick="showAdminUser('${u.id}')">
+      <div>
+        <div>${hasFlag ? '⚠️ ' : ''}<b>${u.name}</b> ${u.banned ? '🚫' : ''}</div>
+        <small class="m">آیدی: <b class="num-cyan">${u.id}</b>${u.username ? ` • @${u.username}` : ''} • گردش: <b class="${numColorClass(i)}">${fmt(u.wagered || 0)} TON</b></small>
+      </div>
+      <span>💎 <b class="num-pink">${fmt(u.coins)} TON</b></span>
+    </div>`;
+  }).join('');
+}
+
 async function loadAdmin() {
   const d = await api('admin/users');
   adminCache = d;
+  $('admTotalPlayers').textContent = (d.users || []).length;
   const s = d.settings;
   $('smin').value = s.minMult; $('smax').value = s.maxMult;
   $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
@@ -1426,13 +1466,7 @@ async function loadAdmin() {
     </div>`;
   }).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
 
-  $('ausers').innerHTML = d.users.map((u, i) => {
-    const hasFlag = !!(u.audit && u.audit.flags && u.audit.flags.length);
-    return `<div class="pl" style="cursor:pointer" onclick="showAdminUser('${u.id}')">
-      <span>${hasFlag ? '⚠️ ' : ''}${u.name} <small class="m">${u.username ? '@' + u.username : u.id} • گردش: <b class="${numColorClass(i)}">${fmt(u.wagered || 0)}</b></small></span>
-      <span>💎 <b class="num-pink">${fmt(u.coins)} TON</b> ${u.banned ? '🚫' : ''}</span>
-    </div>`;
-  }).join('');
+  renderAdminPlayersList();
 
   if (selectedAdminUserId) showAdminUser(selectedAdminUserId);
 }
@@ -1442,12 +1476,39 @@ function setAdminTxFilter(filter, uid) {
   showAdminUser(uid);
 }
 
+async function adminSendUserDm(uid) {
+  const inp = $('admUserDmInp_' + uid);
+  const text = String((inp && inp.value) || '').trim();
+  if (!text) return toast('متن پیام را وارد کنید');
+  try {
+    await api('admin/dm', { id: uid, text });
+    if (inp) inp.value = '';
+    toast('✅ پیام مستقیم در تلگرام ارسال شد');
+    loadAdmin();
+  } catch {}
+}
+
+async function adminAdjustSelectedUser(uid, sign) {
+  const inp = $('admUserAmtInp_' + uid);
+  const raw = Math.abs(Number((inp && inp.value) || 0));
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
+  const amount = sign * raw;
+  try {
+    await api('admin/coins', { id: uid, amount });
+    if (inp) inp.value = '';
+    toast(amount >= 0 ? `✅ +${fmt(amount)} TON اضافه شد` : `✅ ${fmt(amount)} TON کم شد`);
+    loadAdmin();
+    poll();
+  } catch {}
+}
+
 function showAdminUser(uid) {
   if (!adminCache) return;
   selectedAdminUserId = uid;
+  renderAdminPlayersList();
   const u = adminCache.users.find(x => x.id === uid);
   if (!u) return;
-  $('aid').value = u.username ? '@' + u.username : u.id;
+  $('aid').value = u.id;
   const a = u.audit || {};
   const flagsHtml = (a.flags && a.flags.length)
     ? `<div class="fraud-box"><div class="pill-bad">⚠️ مغایرت / هشدار حسابرسی:</div>${a.flags.map(f => `<div>• ${f}</div>`).join('')}</div>`
@@ -1455,22 +1516,30 @@ function showAdminUser(uid) {
 
   const allTxs = u.txs || [];
   const filteredTxs = allTxs.filter(t => {
+    const amt = Number(t.amount || 0);
     if (adminTxFilter === 'all') return true;
-    if (adminTxFilter === 'in') return Number(t.amount || 0) > 0;
-    if (adminTxFilter === 'out') return Number(t.amount || 0) < 0;
-    if (adminTxFilter === 'admin') return ['admin_coins', 'admin_bulk', 'tg_admin_coins'].includes(t.source);
+    if (adminTxFilter === 'in') return amt > 0;
+    if (adminTxFilter === 'out') return amt < 0;
+    if (adminTxFilter === 'admin') return ['admin_coins', 'admin_bulk', 'tg_admin_coins', 'admin_dm'].includes(t.source);
     return true;
   });
 
-  const txsHtml = filteredTxs.slice(0, 40).map((t, i) => {
+  const txsHtml = filteredTxs.slice(0, 60).map((t, i) => {
     const amt = Number(t.amount || 0);
-    const cls = amt >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
+    const isAdd = amt > 0;
+    const isSub = amt < 0;
+    const cls = isAdd ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : (isSub ? 'pill-bad' : 'num-cyan');
+    const dirLabel = isAdd
+      ? `<span class="pill-ok">➕ اضافه شد: +${fmt(amt)} TON</span>`
+      : (isSub
+        ? `<span class="pill-bad">➖ کم شد: -${fmt(Math.abs(amt))} TON</span>`
+        : `<span class="num-cyan">💬 ثبت پیام/رویداد</span>`);
     const balStep = (t.before !== undefined && t.after !== undefined)
-      ? `<small class="m">قبل: <b class="num-cyan">${fmt(t.before)}</b> → بعد: <b class="num-pink">${fmt(t.after)}</b> • منبع: ${t.source || '—'}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
-      : `<small class="m">منبع: ${t.source || '—'}</small>`;
+      ? `<small class="m">موجودی قبل: <b class="num-cyan">${fmt(t.before)}</b> → موجودی بعد: <b class="num-pink">${fmt(t.after)}</b> • ${fmtTime(t.at)}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
+      : `<small class="m">${fmtTime(t.at)}</small>`;
     return `<div class="pl">
-      <div><div>${t.note}</div>${balStep}</div>
-      <b class="${cls}">${amt >= 0 ? '+' : ''}${fmt(amt)} TON</b>
+      <div><div><b>${t.note}</b></div><div>${dirLabel}</div>${balStep}</div>
+      <b class="${cls}">${amt > 0 ? '+' : (amt < 0 ? '-' : '')}${fmt(Math.abs(amt))} TON</b>
     </div>`;
   }).join('') || '<small class="m">تراکنشی در این فیلتر یافت نشد</small>';
 
@@ -1482,9 +1551,34 @@ function showAdminUser(uid) {
     </div>`;
   }).join('') || '<small class="m">بدون بازی</small>';
 
-  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.68)">
-    <h3>حسابرسی ${u.name} (<span class="num-cyan">${u.id}</span>)</h3>
-    <div style="font-size:12px;color:var(--mut);margin-bottom:6px">موجودی فعلی: <b class="num-pink">${fmt(u.coins)} TON</b> • رفرال: <b class="num-gold">${u.refCount || 0}</b> • آخرین IP: <b>${u.lastIp || '—'}</b></div>
+  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.78);margin-bottom:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+      <h3 style="margin:0">${u.name} (<span class="num-cyan">${u.id}</span>)</h3>
+      <button class="ghost" style="padding:5px 9px;font-size:11px" onclick="copyText('${u.id}','آیدی کپی شد')">کپی آیدی</button>
+    </div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:8px">
+      ${u.username ? `یوزرنیم: <b class="num-lav">@${u.username}</b> • ` : ''}
+      موجودی فعلی: <b class="num-pink">${fmt(u.coins)} TON</b> • رفرال: <b class="num-gold">${u.refCount || 0}</b> • IP: <b>${u.lastIp || '—'}</b>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">💬 ارسال پیام مستقیم به این بازیکن در تلگرام</div>
+      <div class="row">
+        <input id="admUserDmInp_${u.id}" type="text" placeholder="متن پیام برای ${u.name}...">
+        <button class="ton" style="padding:8px 12px;flex:0 0 auto" onclick="adminSendUserDm('${u.id}')">ارسال</button>
+      </div>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">💰 اضافه یا کم کردن موجودی TON این بازیکن</div>
+      <input id="admUserAmtInp_${u.id}" type="number" step="0.01" placeholder="مقدار TON (مثلاً 0.5)" style="margin-bottom:6px">
+      <div class="row">
+        <button class="g" style="padding:7px" onclick="adminAdjustSelectedUser('${u.id}',1)">+ اضافه کن</button>
+        <button class="r" style="padding:7px" onclick="adminAdjustSelectedUser('${u.id}',-1)">- کم کن</button>
+        <button class="${u.banned ? 'g' : 'r'}" style="padding:7px" onclick="$('aid').value='${u.id}';adminBan(${!u.banned})">${u.banned ? 'آزادسازی' : 'بن کردن'}</button>
+      </div>
+    </div>
+
     ${flagsHtml}
     <div class="audit-grid">
       <div>واریز TON: <b class="num-pink">${fmt(a.tonDeposits)}</b></div>
@@ -1498,8 +1592,8 @@ function showAdminUser(uid) {
     </div>
     <div class="sub" style="margin-top:10px">
       <button class="${adminTxFilter === 'all' ? 'on' : ''}" onclick="setAdminTxFilter('all','${u.id}')">همه (${allTxs.length})</button>
-      <button class="${adminTxFilter === 'in' ? 'on' : ''}" onclick="setAdminTxFilter('in','${u.id}')">ورودی‌ها (+)</button>
-      <button class="${adminTxFilter === 'out' ? 'on' : ''}" onclick="setAdminTxFilter('out','${u.id}')">خروجی‌ها (-)</button>
+      <button class="${adminTxFilter === 'in' ? 'on' : ''}" onclick="setAdminTxFilter('in','${u.id}')">اضافه شده (+)</button>
+      <button class="${adminTxFilter === 'out' ? 'on' : ''}" onclick="setAdminTxFilter('out','${u.id}')">کم شده (-)</button>
       <button class="${adminTxFilter === 'admin' ? 'on' : ''}" onclick="setAdminTxFilter('admin','${u.id}')">ادمین</button>
     </div>
     ${txsHtml}

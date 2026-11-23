@@ -1,4 +1,4 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.6 + Support Photo Forwarding)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.7 + Admin Search, DM & Full Balance Ledger)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
@@ -1280,6 +1280,34 @@ export class Game {
           else failed++;
         }
         return json(200, { ok: true, sent, failed, total: targets.length });
+      }
+
+      case 'POST /api/admin/dm': {
+        const t = this.findUserByQuery(body.id);
+        const msgText = String(body.text || '').trim();
+        if (!t) return bad('کاربر یافت نشد');
+        if (!msgText) return bad('متن پیام را وارد کنید');
+        const sent = await this.tg('sendMessage', {
+          chat_id: t.id,
+          text: `💬 پیام ادمین Tonia:\n${msgText}`
+        });
+        if (!sent) return bad('ارسال پیام در تلگرام ناموفق بود (ممکن است کاربر بات را بلاک کرده باشد)');
+        if (!Array.isArray(t.txs)) t.txs = [];
+        t.txs.unshift({
+          id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          type: 'note',
+          source: 'admin_dm',
+          amount: 0,
+          before: r4(t.coins || 0),
+          after: r4(t.coins || 0),
+          ip: this.ctxIp || t.lastIp || '',
+          note: `پیام ادمین ارسال شد: ${msgText}`,
+          status: 'sent',
+          at: Date.now()
+        });
+        t.txs = t.txs.slice(0, 120);
+        this.touch(t);
+        return json(200, { ok: true, userId: t.id, name: t.name });
       }
 
       case 'POST /api/admin/coins': {
