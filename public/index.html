@@ -2,408 +2,1757 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Cosmo Rocket</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tonia</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
 <style>
-:root{--bg:#050816;--glass:rgba(22,28,70,.55);--glass2:rgba(255,255,255,.06);--line:rgba(140,150,255,.22);--acc:#7c5cff;--acc2:#35e0ff;--gold:#ffc94d;--ok:#3ddc97;--bad:#ff5d7a;--tx:#eef0ff;--mut:#98a0d6}
+:root{
+  --bg:#050817;
+  --glass:rgba(20,30,74,.26);
+  --glass-hi:rgba(36,52,122,.34);
+  --line:rgba(155,190,255,.32);
+  --acc:#7c5cff;--acc2:#35e0ff;--gold:#ffc94d;--ok:#3ddc97;--bad:#ff5d7a;--pink:#ff9ec7;
+  --tx:#f4f7ff;--mut:#a9b6eb
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,Tahoma,sans-serif;overflow-x:hidden}
-body{min-height:100vh}
-#bgc{position:fixed;inset:0;z-index:0}
-.aur{position:fixed;inset:0;z-index:0;background:radial-gradient(60% 40% at 20% 0%,rgba(124,92,255,.35),transparent 70%),radial-gradient(50% 40% at 100% 30%,rgba(53,224,255,.18),transparent 70%),radial-gradient(60% 40% at 0% 100%,rgba(255,93,122,.15),transparent 70%)}
-#app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 12px 96px;min-height:100vh}
-.glass{background:var(--glass);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
-.card{padding:14px;margin-bottom:12px}
-h3{margin:0 0 10px;font-size:15px}
-button{font:inherit;border:0;border-radius:14px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,#8a6bff,#5a3de0);font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(90,61,224,.4);transition:transform .12s}
-button:active{transform:scale(.96)}button:disabled{opacity:.45;box-shadow:none}
-button.g{background:linear-gradient(135deg,#2fd68b,#1a9a63);box-shadow:0 6px 18px rgba(26,154,99,.4)}button.r{background:linear-gradient(135deg,#ff5d7a,#c93555)}button.o{background:linear-gradient(135deg,#ffc94d,#e89a1b);color:#2a1a00}button.ghost{background:var(--glass2);box-shadow:none;border:1px solid var(--line)}
-input{font:inherit;width:100%;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(5,8,22,.55);color:var(--tx);text-align:center;outline:none}
-input:focus{border-color:var(--acc2)}
-.row{display:flex;gap:8px}.row>*{flex:1}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 15% 5%,rgba(124,92,255,.35),transparent 42%),
+    radial-gradient(circle at 88% 15%,rgba(53,224,255,.22),transparent 38%),
+    radial-gradient(circle at 50% 100%,rgba(61,220,151,.12),transparent 45%),
+    linear-gradient(165deg,#070b22 0%,#050817 60%,#030510 100%);
+  color:var(--tx);font-family:system-ui,Tahoma,sans-serif;min-height:100vh;overflow-x:hidden;
+  perspective:1200px
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;max-width:500px;margin:0 auto;padding:12px 12px 98px}
+
+#splash{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 45%,rgba(124,92,255,.38) 0%,rgba(5,8,23,.94) 75%);
+  transition:opacity .65s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1)
+}
+#splash.hide{opacity:0;transform:scale(1.06);pointer-events:none}
+.logo-wrap{text-align:center;animation:floatLogo 2.4s ease-in-out infinite}
+.logo-ring{
+  width:94px;height:94px;margin:0 auto 14px;border-radius:28px;
+  background:linear-gradient(135deg,rgba(124,92,255,.35),rgba(53,224,255,.25));
+  border:1px solid rgba(255,255,255,.36);
+  box-shadow:0 0 44px rgba(124,92,255,.65),inset 0 0 22px rgba(53,224,255,.35);
+  display:grid;place-items:center;font-size:46px;
+  animation:popIn .85s cubic-bezier(.18,.89,.32,1.28)
+}
+.logo-title{
+  font-size:36px;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(90deg,#fff,#35e0ff,#ffc94d,#7c5cff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:popIn .85s .1s both
+}
+.logo-line{
+  width:150px;height:3px;margin:10px auto 0;border-radius:99px;
+  background:linear-gradient(90deg,transparent,#35e0ff,#ffc94d,transparent);
+  animation:glowLine 1.6s ease-in-out infinite alternate
+}
+@keyframes popIn{from{opacity:0;transform:translateY(18px) scale(.86)}to{opacity:1;transform:none}}
+@keyframes floatLogo{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes glowLine{from{opacity:.45;transform:scaleX(.75)}to{opacity:1;transform:scaleX(1.15)}}
+@keyframes cardEnter{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px;animation:cardEnter .5s ease both}
+.av{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(124,92,255,.75),rgba(53,224,255,.75));
+  border:1px solid rgba(255,255,255,.35);
+  display:grid;place-items:center;font-weight:700;overflow:hidden;
+  box-shadow:0 6px 18px rgba(53,224,255,.25),inset 0 1px 2px rgba(255,255,255,.55);
+  transition:transform .25s ease
+}
+.av:hover{transform:scale(1.06)}
+.av img{width:100%;height:100%;object-fit:cover}
 .grow{flex:1;min-width:0}
 .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mut{color:var(--mut);font-size:12px}
-.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;font-weight:800;overflow:hidden;flex:none}
-.av img{width:100%;height:100%;object-fit:cover}
-/* header */
-.top{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:12px}
-.bar{height:5px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s}
-.coins{display:flex;align-items:center;gap:6px;background:rgba(255,201,77,.12);border:1px solid rgba(255,201,77,.4);padding:8px 12px;border-radius:99px;font-weight:800;color:var(--gold);cursor:pointer}
-.coin{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffc94d 55%,#c98a10);display:inline-block;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25);vertical-align:-3px}
-/* pages */
-.page{display:none;animation:pg .35s ease}.page.on{display:block}
-@keyframes pg{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-/* banners */
-.ban{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -12px 8px;padding:4px 12px}
-.ban::-webkit-scrollbar{display:none}
-.bn{flex:0 0 88%;scroll-snap-align:center;height:132px;border-radius:22px;padding:16px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.18);box-shadow:0 12px 30px rgba(0,0,0,.4)}
-.bn h4{margin:0 0 4px;font-size:19px;font-weight:900;text-shadow:0 2px 12px rgba(0,0,0,.4)}.bn p{margin:0;font-size:12.5px;opacity:.92;max-width:60%}
-.bn .ic{position:absolute;left:10px;bottom:-6px;font-size:84px;filter:drop-shadow(0 10px 14px rgba(0,0,0,.45));animation:flt 3.2s ease-in-out infinite}
-.bn::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.22) 50%,transparent 60%);transform:translateX(-120%);animation:shine 4.5s infinite}
-@keyframes shine{to{transform:translateX(120%)}}@keyframes flt{50%{transform:translateY(-8px) rotate(-6deg)}}
-.b1{background:linear-gradient(135deg,#ff7a3d,#d12e7a)}.b2{background:linear-gradient(135deg,#1fb97a,#0b6e8c)}.b3{background:linear-gradient(135deg,#6a4dff,#27c4ff)}
-.dots{display:flex;gap:6px;justify-content:center;margin-bottom:12px}.dots i{width:6px;height:6px;border-radius:9px;background:rgba(255,255,255,.25);transition:.3s}.dots i.on{width:18px;background:var(--acc2)}
-/* game cards 3d */
-.sec{font-weight:800;margin:6px 4px 10px;font-size:15px}
-.games{display:grid;grid-template-columns:1fr 1fr;gap:12px;perspective:900px;margin-bottom:12px}
-.gc{height:170px;border-radius:22px;position:relative;transform-style:preserve-3d;transition:transform .15s;cursor:pointer;border:1px solid rgba(255,255,255,.2);overflow:hidden;box-shadow:0 16px 34px rgba(0,0,0,.45)}
-.gc.wide{grid-column:span 2;height:128px}
-.gc .t{position:absolute;right:14px;top:14px;transform:translateZ(40px)}.gc .t b{font-size:20px;display:block;text-shadow:0 2px 10px rgba(0,0,0,.45)}.gc .t span{font-size:12px;opacity:.9}
-.gc .ic{position:absolute;left:10px;bottom:6px;font-size:72px;transform:translateZ(70px);filter:drop-shadow(0 14px 12px rgba(0,0,0,.5));animation:flt 3.6s ease-in-out infinite}
-.gc .live{position:absolute;left:12px;top:12px;font-size:10px;background:rgba(0,0,0,.4);padding:3px 8px;border-radius:99px;transform:translateZ(30px)}
-.gc .live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#3dff9a;margin-left:5px;animation:bl 1s infinite}@keyframes bl{50%{opacity:.2}}
-.g-crash{background:linear-gradient(150deg,#7a3dff,#e03a9c 70%,#ff7a3d)}.g-arena{background:linear-gradient(150deg,#1ec2ff,#3a5bff 60%,#a13dff)}.g-wheel{background:linear-gradient(150deg,#ffb53d,#ff5d7a)}
-/* nav */
-.tabs{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;z-index:20;display:flex;justify-content:center;padding:0 12px}
-.tabs div{display:flex;max-width:456px;width:100%;padding:6px}
-.tabs button{flex:1;background:none;box-shadow:none;border-radius:14px;padding:8px 2px;font-size:11px;color:var(--mut)}.tabs button.on{color:#fff;background:rgba(124,92,255,.35)}.tabs b{display:block;font-size:20px}
-/* overlay screens */
-.scr{position:fixed;inset:0;z-index:30;background:rgba(5,8,22,.96);overflow-y:auto;display:none;padding:calc(10px + env(safe-area-inset-top)) 12px 30px}
-.scr.on{display:block;animation:pg .3s ease}.scr>div{max-width:480px;margin:0 auto}
-.bk{display:flex;align-items:center;gap:10px;margin-bottom:12px}.bk button{padding:8px 14px}
-/* crash */
-.hist{display:flex;gap:6px;overflow:auto;margin-bottom:10px;direction:ltr;scrollbar-width:none}
-.chip{padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);white-space:nowrap}
-.t0{color:#e9ecff}.t1{color:#3ddc97;border-color:#3ddc9755}.t2{color:#4aa3ff;border-color:#4aa3ff55}.t3{color:#b36bff;border-color:#b36bff66}.t4{color:#ffd54a;border-color:#ffd54a77}
-.t5{background:linear-gradient(90deg,#ff5d7a,#ffc94d,#3ddc97,#35e0ff,#b36bff,#ff5d7a);background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 2s linear infinite}@keyframes rb{to{background-position:200% 0}}
-#stage{position:relative;height:310px;border-radius:24px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(circle at 50% 120%,#2b1a78,#0a0e2a 70%)}
-#stage.shake{animation:shk .5s}@keyframes shk{20%{transform:translate(-8px,5px)}40%{transform:translate(7px,-6px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(4px,4px)}}
-#cv{width:100%;height:100%;display:block}
-#mult{position:absolute;top:34px;left:0;right:0;text-align:center;font-size:58px;font-weight:900;direction:ltr;pointer-events:none;text-shadow:0 0 28px currentColor;transition:color .3s}
-#msub{position:absolute;top:104px;left:0;right:0;text-align:center;font-size:13px;color:var(--mut);pointer-events:none}
-#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
-.cd{position:absolute;inset:0;display:none;place-items:center;font-size:120px;font-weight:900;color:#fff;pointer-events:none;text-shadow:0 0 40px #7c5cff}
-.pl{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-/* arena */
-.bank{display:flex;align-items:center;gap:8px;padding:12px;font-weight:800;margin-bottom:10px;justify-content:center;font-size:17px;position:relative;overflow:hidden}
-.bank i{position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s linear}
-#field{position:relative;height:330px;border-radius:24px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,#bfe6ff,#9ad0ff);margin-bottom:10px;perspective:800px}
-.band{position:absolute;inset:0;transition:clip-path .8s cubic-bezier(.2,.8,.2,1)}
-.pav{position:absolute;width:54px;height:54px;margin:-27px;border-radius:50%;border:3px solid #fff;overflow:hidden;display:grid;place-items:center;font-weight:900;color:#fff;font-size:20px;box-shadow:0 8px 18px rgba(0,0,0,.35);transition:left .8s,top .8s;background:#3a5bff}
-.pav img{width:100%;height:100%;object-fit:cover}
-.pav.me{outline:3px solid var(--gold)}
-#acd{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:92px;height:92px;border-radius:26px;display:none;place-items:center;font-size:44px;font-weight:900;color:#fff;background:rgba(255,255,255,.28);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 30px rgba(0,0,0,.25)}
-#await{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(20,24,50,.75);color:#fff;font-size:12px;padding:7px 14px;border-radius:99px;white-space:nowrap}
-.chips{display:flex;gap:8px;margin-bottom:10px}.chips button{flex:1;padding:12px 4px;background:var(--glass2);border:1px solid var(--line);box-shadow:none}
-.sub{display:flex;gap:6px;margin-bottom:10px}.sub button{flex:1;padding:9px;font-size:13px;background:var(--glass2);box-shadow:none}.sub button.on{background:var(--acc)}
-.hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px}
-.win{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(5,8,22,.8);backdrop-filter:blur(8px)}.win.on{display:grid}
-.win .bx{text-align:center;padding:26px 30px;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.4);opacity:0}}
-#conf{position:fixed;inset:0;z-index:70;pointer-events:none}
-/* wheel */
-#wheel{width:260px;height:260px;margin:0 auto;display:block;transition:transform 4.5s cubic-bezier(.12,.75,.1,1);filter:drop-shadow(0 12px 22px rgba(0,0,0,.5))}
-.pointer{text-align:center;font-size:30px;margin-bottom:-18px;position:relative;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
-/* lb / profile */
-.lb{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}.lb .rk{width:26px;font-weight:800}
-.stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat div{background:rgba(255,255,255,.05);border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:18px;color:var(--acc2)}.stat small{color:var(--mut)}
-.pos{color:var(--ok)}.neg{color:var(--bad)}
-#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:90;background:rgba(30,36,90,.95);border:1px solid var(--acc);padding:10px 16px;border-radius:14px;display:none;max-width:90%}
-/* splash */
-#splash{position:fixed;inset:0;z-index:100;background:#030512;display:grid;place-items:center;transition:opacity .7s,transform .7s}
-#splash.out{opacity:0;transform:scale(1.15);pointer-events:none}
-#splash .lg{text-align:center;position:relative}
-#splash .rk{font-size:76px;display:block;animation:lau 1.6s cubic-bezier(.3,.1,.2,1) both;filter:drop-shadow(0 0 24px #7c5cff)}
-@keyframes lau{0%{transform:translateY(160px) scale(.4) rotate(0);opacity:0}40%{opacity:1}100%{transform:translateY(0) scale(1) rotate(-8deg)}}
-#splash h1{margin:6px 0 0;font-size:40px;letter-spacing:6px;font-weight:900;direction:ltr;display:flex;justify-content:center;gap:2px}
-#splash h1 span{display:inline-block;opacity:0;transform:translateY(30px) rotateX(90deg);animation:lt .6s forwards;background:linear-gradient(180deg,#fff,#8fb5ff 60%,#7c5cff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 12px rgba(124,92,255,.8))}
-@keyframes lt{to{opacity:1;transform:none}}
-#splash .sb{margin-top:8px;color:#8d95c9;letter-spacing:5px;font-size:11px;opacity:0;animation:lt 1s 1.6s forwards}
-#splash .ring{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;border:2px solid #7c5cff;transform:translate(-50%,-50%);animation:rg 1.8s 1s ease-out both}
-@keyframes rg{from{opacity:.9;transform:translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate(-50%,-50%) scale(26)}}
+.lv{font-size:12px;color:var(--mut)}
+.bar{height:5px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
+.coins{
+  background:linear-gradient(135deg,rgba(0,152,234,.22),rgba(53,224,255,.16));
+  border:1px solid rgba(53,224,255,.55);padding:7px 13px;border-radius:99px;
+  font-weight:800;color:var(--acc2);
+  box-shadow:0 8px 24px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .2s ease;white-space:nowrap
+}
+.coins:hover{transform:translateY(-1px) scale(1.02)}
+
+.card,.banner{
+  position:relative;
+  background:linear-gradient(145deg,var(--glass-hi),var(--glass));
+  border:1px solid var(--line);
+  border-top-color:rgba(255,255,255,.38);
+  border-left-color:rgba(255,255,255,.24);
+  border-radius:22px;padding:15px;margin-bottom:13px;
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.38),
+    0 0 18px rgba(53,224,255,.08),
+    inset 0 1px 1px rgba(255,255,255,.28);
+  transform-style:preserve-3d;
+  animation:cardEnter .45s cubic-bezier(.22,1,.36,1) both;
+  transition:transform .24s cubic-bezier(.22,1,.36,1),border-color .25s ease,box-shadow .25s ease,background .25s ease
+}
+.banner{
+  overflow:hidden;cursor:pointer;display:flex;
+  align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(20,30,74,.28),rgba(53,224,255,.20))
+}
+.banner::before{
+  content:"";position:absolute;top:0;left:-120%;width:65%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  transform:skewX(-22deg);transition:left .65s ease;pointer-events:none
+}
+.banner:hover::before{left:140%}
+.banner::after,.card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,transparent 45%,rgba(53,224,255,.07) 100%)
+}
+.banner:hover,.card:hover{
+  border-color:rgba(53,224,255,.68);
+  box-shadow:0 20px 40px rgba(0,0,0,.46),0 0 24px rgba(124,92,255,.24),inset 0 1px 1px rgba(255,255,255,.38)
+}
+.banner .b-badge{
+  display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;
+  border-radius:99px;background:rgba(53,224,255,.18);color:var(--acc2);margin-bottom:5px;
+  border:1px solid rgba(53,224,255,.38)
+}
+.banner .b-ico{
+  font-size:42px;transform:translateZ(24px);
+  filter:drop-shadow(0 10px 18px rgba(124,92,255,.55));
+  transition:transform .3s ease
+}
+.banner:hover .b-ico{transform:translateZ(28px) scale(1.08) rotate(-4deg)}
+
+h3{margin:0 0 10px;font-size:15px}
+button{
+  font:inherit;border:1px solid rgba(255,255,255,.24);border-radius:13px;padding:11px 14px;color:#fff;
+  background:linear-gradient(135deg,rgba(124,92,255,.85),rgba(80,50,216,.85));font-weight:700;cursor:pointer;
+  box-shadow:0 8px 18px rgba(124,92,255,.28),inset 0 1px 0 rgba(255,255,255,.34);
+  transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,opacity .15s ease
+}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 22px rgba(124,92,255,.4),inset 0 1px 0 rgba(255,255,255,.45)}
+button:active:not(:disabled){transform:scale(.96)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.g{background:linear-gradient(135deg,rgba(39,185,124,.86),rgba(24,130,86,.86))}
+button.ton{background:linear-gradient(135deg,rgba(0,152,234,.92),rgba(0,104,196,.92));box-shadow:0 8px 20px rgba(0,152,234,.34),inset 0 1px 0 rgba(255,255,255,.38)}
+button.r{background:linear-gradient(135deg,rgba(255,93,122,.86),rgba(194,44,74,.86))}
+button.o{background:linear-gradient(135deg,rgba(255,201,77,.9),rgba(227,148,18,.9));color:#251600}
+button.ghost{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)
+}
+button.ghost:hover:not(:disabled){background:rgba(255,255,255,.14)}
+input,select,textarea{
+  font:inherit;width:100%;padding:10px;border-radius:12px;
+  border:1px solid rgba(155,190,255,.26);background:rgba(10,16,44,.42);
+  color:var(--tx);text-align:center;transition:border-color .2s ease,box-shadow .2s ease
+}
+textarea{text-align:right;resize:vertical;min-height:74px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(53,224,255,.16)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+
+.ton-box{
+  border:1px solid rgba(0,152,234,.45);
+  background:linear-gradient(145deg,rgba(0,152,234,.14),rgba(14,22,56,.32));
+  border-radius:16px;padding:12px;margin-top:10px
+}
+.mono-pill{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:11px;background:rgba(6,10,28,.55);
+  border:1px solid rgba(155,190,255,.22);border-radius:10px;
+  padding:7px 9px;direction:ltr;text-align:left;word-break:break-all;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px
+}
+
+#stage{
+  position:relative;height:230px;border-radius:20px;overflow:hidden;
+  background:radial-gradient(circle at 50% 115%,rgba(124,92,255,.35),rgba(10,16,44,.48) 72%);
+  border:1px solid rgba(155,190,255,.36);
+  box-shadow:0 16px 34px rgba(0,0,0,.42),inset 0 1px 1px rgba(255,255,255,.25);
+  transition:border-color .25s ease,box-shadow .25s ease
+}
+#stage.shake{animation:shake .35s ease}
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,3px)}
+  50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,-2px)}
+}
+#cv{width:100%;height:100%}
+.stage-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;
+  padding:10px 12px 24px;text-align:center
+}
+#mult{
+  font-size:48px;font-weight:900;line-height:1.05;direction:ltr;
+  transition:color .2s ease,text-shadow .2s ease,transform .2s ease
+}
+.m-plain{color:#ff9ec7;text-shadow:0 0 18px rgba(255,158,199,.45)}
+.m-green{color:#3ddc97;text-shadow:0 0 24px rgba(61,220,151,.65)}
+.m-blue{color:#35e0ff;text-shadow:0 0 26px rgba(53,224,255,.7)}
+.m-purple{color:#c084fc;text-shadow:0 0 28px rgba(192,132,252,.78)}
+.m-yellow{color:#ffd43b;text-shadow:0 0 30px rgba(255,212,59,.85)}
+.m-rainbow{
+  background:linear-gradient(90deg,#ff9ec7,#ffc94d,#3ddc97,#35e0ff,#c084fc,#ff9ec7);
+  background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:rainbowMove 1.4s linear infinite;filter:drop-shadow(0 0 18px rgba(255,158,199,.5))
+}
+@keyframes rainbowMove{0%{background-position:0% 50%}100%{background-position:250% 50%}}
+
+#liveTop3{
+  margin-top:6px;display:flex;flex-direction:column;gap:3px;
+  max-width:94%;background:rgba(8,13,36,.52);
+  border:1px solid rgba(255,158,199,.26);border-radius:12px;
+  padding:5px 9px;font-size:11px;line-height:1.35
+}
+.top3-row{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.top3-name{color:#f4f7ff;font-weight:700;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.top3-c1{color:#ff9ec7;font-weight:900}
+.top3-c2{color:#35e0ff;font-weight:900}
+.top3-c3{color:#ffc94d;font-weight:900}
+
+#sub{position:absolute;bottom:6px;width:100%;text-align:center;font-size:12px;color:var(--mut)}
+.hist{display:flex;gap:6px;overflow:auto;margin-bottom:10px;direction:ltr;padding-bottom:2px}
+.hist span{
+  padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;
+  background:rgba(28,40,96,.42);border:1px solid rgba(155,190,255,.24);white-space:nowrap;
+  transition:transform .2s ease
+}
+.hist span:hover{transform:translateY(-2px)}
+.pl{
+  display:flex;justify-content:space-between;align-items:center;font-size:13px;
+  padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.08);
+  transition:background .2s ease
+}
+.pl:hover{background:rgba(255,255,255,.04);border-radius:10px}
+
+.dual-box{
+  border:1px solid rgba(155,190,255,.28);border-radius:16px;padding:11px;
+  background:rgba(16,24,62,.32);margin-bottom:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  transition:border-color .22s ease
+}
+.dual-box:hover{border-color:rgba(53,224,255,.45)}
+.shield-lbl{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);
+  margin:7px 0;cursor:pointer;user-select:none
+}
+.shield-lbl input{width:auto}
+
+.mission-row{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px
+}
+.mission-row:last-child{border-bottom:0}
+.mission-row button{padding:7px 11px;font-size:12px;flex:0 0 auto}
+.streak-pill{
+  display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;
+  background:rgba(255,201,77,.15);border:1px solid rgba(255,201,77,.42);
+  color:var(--gold);font-size:12px;font-weight:800
+}
+
+.arena-hero{
+  text-align:center;
+  background:radial-gradient(circle at 50% 0%,rgba(255,158,199,.18),rgba(16,24,62,.42) 72%);
+  border:1px solid rgba(255,158,199,.32);
+  border-radius:20px;padding:16px 14px;margin-bottom:12px
+}
+.arena-pool-val{
+  font-size:32px;font-weight:900;margin:4px 0;
+  text-shadow:0 0 22px rgba(255,158,199,.35)
+}
+.arena-timer-badge{
+  display:inline-block;margin-top:6px;padding:4px 12px;border-radius:99px;
+  background:rgba(53,224,255,.14);border:1px solid rgba(53,224,255,.35);
+  font-size:12px;font-weight:800
+}
+
+#winnerModal{
+  position:fixed;inset:0;z-index:40;background:rgba(4,7,20,.58);
+  display:none;place-items:center;padding:16px;animation:cardEnter .25s ease
+}
+#winnerModal.show{display:grid}
+.wbox{
+  max-width:340px;width:100%;text-align:center;
+  background:linear-gradient(145deg,rgba(36,52,122,.56),rgba(14,22,56,.62));
+  border:1px solid rgba(255,201,77,.6);border-radius:24px;padding:22px;
+  box-shadow:0 24px 54px rgba(0,0,0,.55),inset 0 1px 1px rgba(255,255,255,.32);
+  animation:popIn .35s cubic-bezier(.18,.89,.32,1.28)
+}
+
+.tabs{
+  position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;justify-content:center;
+  background:linear-gradient(180deg,rgba(18,28,72,.38),rgba(10,16,44,.52));
+  border-top:1px solid rgba(155,190,255,.3);
+  box-shadow:0 -10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22)
+}
+.tabs div{display:flex;max-width:500px;width:100%}
+.tabs button{
+  flex:1;background:none;border:0;box-shadow:none;border-radius:0;
+  padding:9px 2px;font-size:11px;color:var(--mut);
+  transition:transform .2s cubic-bezier(.22,1,.36,1),color .2s ease
+}
+.tabs button:hover{transform:translateY(-2px)}
+.tabs button.on{color:var(--acc2);transform:translateY(-3px)}
+.tabs b{display:block;font-size:19px;margin-bottom:1px;transition:transform .22s ease}
+.tabs button.on b{transform:scale(1.14);filter:drop-shadow(0 4px 10px rgba(53,224,255,.45))}
+.page{display:none}.page.on{display:block;animation:cardEnter .35s cubic-bezier(.22,1,.36,1) both}
+
+#wheel{width:220px;height:220px;margin:6px auto;display:block;transition:transform 4s cubic-bezier(.1,.7,.1,1)}
+.pointer{text-align:center;font-size:26px;margin-bottom:-14px;position:relative;z-index:2;animation:floatLogo 1.8s ease-in-out infinite}
+.lb{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;transition:background .2s ease}
+.lb:hover{background:rgba(255,255,255,.04);border-radius:10px}
+.lb .rk{width:24px;color:var(--gold);font-weight:700}
+.sub{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.sub button{padding:8px 10px;font-size:12px;background:rgba(255,255,255,.08);box-shadow:none}
+.sub button.on{background:linear-gradient(135deg,rgba(124,92,255,.85),rgba(53,224,255,.65))}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat div{
+  background:rgba(16,24,62,.32);border:1px solid rgba(155,190,255,.22);
+  border-radius:15px;padding:10px;text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  transition:transform .2s ease,border-color .2s ease
+}
+.stat div:hover{transform:translateY(-2px);border-color:rgba(53,224,255,.45)}
+.stat b{display:block;font-size:18px;color:var(--pink)}
+.stat small{color:var(--mut)}
+#toast{
+  position:fixed;top:14px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,rgba(32,46,112,.72),rgba(14,22,56,.78));
+  border:1px solid var(--pink);padding:10px 16px;
+  border-radius:14px;z-index:60;display:none;font-weight:700;
+  box-shadow:0 12px 28px rgba(0,0,0,.42),0 0 16px rgba(255,158,199,.28);
+  animation:popIn .25s ease
+}
+small.m{color:var(--mut)}
+.num-pink{color:#ff9ec7 !important;font-weight:800}
+.num-cyan{color:#35e0ff !important;font-weight:800}
+.num-gold{color:#ffc94d !important;font-weight:800}
+.num-mint{color:#3ddc97 !important;font-weight:800}
+.num-lav{color:#c084fc !important;font-weight:800}
+.pill-ok{color:var(--ok);font-weight:700}
+.pill-bad{color:var(--bad);font-weight:700}
+.pill-wait{color:var(--gold);font-weight:700}
+.fraud-box{
+  border:1px solid rgba(255,93,122,.55);
+  background:rgba(255,93,122,.12);
+  border-radius:14px;padding:10px;margin:8px 0;font-size:12px
+}
+.audit-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;font-size:12px
+}
+.audit-grid div{
+  background:rgba(10,16,44,.45);border:1px solid rgba(155,190,255,.18);
+  border-radius:10px;padding:7px
+}
 </style>
 </head>
 <body>
-<canvas id="bgc"></canvas><div class="aur"></div>
-<div id="splash"><div class="ring"></div><div class="lg"><span class="rk">🚀</span><h1 id="logo"></h1><div class="sb">VIRTUAL ARCADE</div></div></div>
-<div id="toast"></div><canvas id="conf"></canvas>
-<div class="win" id="win" onclick="this.classList.remove('on')"><div class="bx glass" id="winbx"></div></div>
+<canvas id="stars"></canvas>
+<div id="toast"></div>
 
-<div id="app">
-  <div class="top glass">
-    <div class="av" id="av"></div>
-    <div class="grow"><div class="nm" id="nm"></div><div class="mut" id="lv"></div><div class="bar"><i id="xp"></i></div></div>
-    <div class="coins" onclick="openLedger()"><span class="coin"></span><span id="coins">0</span></div>
-    <button class="ghost" style="padding:8px 10px" onclick="toggleSnd()" id="snd">🔊</button>
-  </div>
-
-  <!-- GAMES -->
-  <div class="page on" id="p-games">
-    <div class="ban" id="ban">
-      <div class="bn b1"><h4>🎁 گردونه‌ی روزانه</h4><p>هر ۲۴ ساعت یک بار بچرخان و تا ۱۰ سکه ببر</p><span class="ic">🎡</span></div>
-      <div class="bn b2"><h4>🏷 ۵ سکه‌ی رایگان</h4><p>آیدی بات را در اسمت بگذار و هر روز جایزه بگیر</p><span class="ic">💎</span></div>
-      <div class="bn b3"><h4>⚔️ آرنای زنده</h4><p>با بازیکن‌ها رقابت کن، شانس برد = سهم تو از بانک</p><span class="ic">🏆</span></div>
-    </div>
-    <div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>
-    <div class="sec">🎮 بازی‌ها</div>
-    <div class="games">
-      <div class="gc g-crash" onclick="openScr('crash')"><span class="live">LIVE</span><div class="t"><b>کرش</b><span>قبل از انفجار برداشت کن</span></div><span class="ic">🚀</span></div>
-      <div class="gc g-arena" onclick="openScr('arena')"><span class="live">LIVE</span><div class="t"><b>آرنا</b><span>نبرد بین بازیکن‌ها</span></div><span class="ic">⚔️</span></div>
-      <div class="gc wide g-wheel" onclick="openScr('wheel')"><div class="t"><b>گردونه‌ی شانس</b><span>روزانه • ۱ تا ۱۰ سکه</span></div><span class="ic">🎡</span></div>
-    </div>
-  </div>
-
-  <!-- LEADERBOARD -->
-  <div class="page" id="p-lb">
-    <div class="sub"><button class="on" onclick="lbTab('circulation',this)">در گردش</button><button onclick="lbTab('winners',this)">بیشترین برد</button><button onclick="lbTab('rich',this)">ثروتمندترین</button></div>
-    <div class="glass card" id="lbbox"></div>
-  </div>
-
-  <!-- PROFILE -->
-  <div class="page" id="p-me">
-    <div class="glass card" style="text-align:center"><div class="av" style="width:84px;height:84px;margin:0 auto 8px;font-size:32px" id="av2"></div><div class="nm" id="nm2" style="font-size:19px"></div><div class="mut" id="lv2"></div></div>
-    <div class="glass card"><h3>👛 کیف سکه</h3><div style="font-size:36px;font-weight:900;color:var(--gold);text-align:center"><span class="coin" style="width:28px;height:28px"></span> <span id="w2">0</span></div>
-      <button class="ghost" style="width:100%;margin-top:10px" onclick="openLedger()">📜 سابقه‌ی مالی</button><div class="mut" style="margin-top:8px">سکه‌ها مجازی هستند و ارزش پولی ندارند.</div></div>
-    <div class="glass card"><h3>🏷 جایزه‌ی اسم ربات</h3><div class="mut">آیدی بات (<b id="botun"></b>) را در اسم پروفایل تلگرام بگذار و هر ۲۴ ساعت ۵ سکه بگیر.</div><button id="tbtn" class="o" style="width:100%;margin-top:10px" onclick="tag()">بررسی و دریافت ۵ سکه</button></div>
-    <div class="glass card"><h3>📊 آمار</h3><div class="stat" id="stats"></div></div>
-  </div>
-
-  <!-- ADMIN -->
-  <div class="page" id="p-admin">
-    <div class="glass card"><h3>شارژ / کسر سکه</h3><input id="aid" placeholder="آیدی عددی یا @یوزرنیم"><input id="aamt" type="number" placeholder="مقدار (منفی = کم کردن)" style="margin-top:8px"><input id="anote" placeholder="توضیح (اختیاری)" style="margin-top:8px">
-      <div class="row" style="margin-top:8px"><button class="g" onclick="adminCoins()">اعمال</button><button class="ghost" onclick="adminHist()">📜 سابقه</button></div>
-      <div class="row" style="margin-top:8px"><button class="r" onclick="adminBan(true)">بن</button><button class="ghost" onclick="adminBan(false)">آزاد</button></div></div>
-    <div class="glass card"><h3>ضریب‌های بعدی کرش</h3><div class="mut">با فاصله یا کاما؛ بعد از تمام شدن صف، خودکار تنظیم می‌شود.</div>
-      <input id="aq" placeholder="مثلاً 1.5 3 2.2 10" style="margin:8px 0"><button style="width:100%" onclick="adminQueue()">ذخیره صف</button></div>
-    <div class="glass card"><h3>حالت خودکار (۲۴ ساعته)</h3>
-      <div class="row"><input id="smin" placeholder="حداقل"><input id="smax" placeholder="حداکثر"></div>
-      <div class="row" style="margin:8px 0"><input id="sedge" placeholder="لبه 0.04"><input id="sstart" placeholder="سکه‌ی شروع"></div>
-      <button style="width:100%" onclick="adminSettings()">ذخیره تنظیمات</button></div>
-    <div class="glass card"><h3>✉️ پیام مستقیم به کاربر</h3><input id="adm" placeholder="متن پیام (به آیدی بالا ارسال می‌شود)"><button style="width:100%;margin-top:8px" onclick="adminDm()">ارسال</button></div>
-    <div class="glass card"><h3>📣 پیام همگانی</h3><input id="abc" placeholder="متن پیام"><button style="width:100%;margin-top:8px" onclick="adminBc()">ارسال</button></div>
-    <div class="glass card"><h3>کاربران <span class="mut" id="acnt"></span></h3><input id="asr" placeholder="جستجو: نام، یوزرنیم یا آیدی" oninput="filterUsers()" style="margin-bottom:8px"><div id="ausers"></div></div>
+<div id="splash">
+  <div class="logo-wrap">
+    <div class="logo-ring">💎</div>
+    <div class="logo-title">TONIA</div>
+    <div class="logo-line"></div>
   </div>
 </div>
 
-<!-- CRASH SCREEN -->
-<div class="scr" id="s-crash"><div>
-  <div class="bk"><button class="ghost" onclick="closeScr()">‹ بازگشت</button><b>🚀 کرش</b><span class="grow"></span><div class="coins" onclick="openLedger()"><span class="coin"></span><span class="cc">0</span></div></div>
-  <div class="hist" id="hist"></div>
-  <div id="stage"><canvas id="cv"></canvas><div id="mult">1.00x</div><div id="msub"></div><div class="cd" id="cd"></div><div id="flash"></div></div>
-  <div class="glass card" style="margin-top:12px">
-    <div class="row"><input id="amt" type="number" inputmode="numeric" value="10" min="1"><input id="auto" type="number" step="0.1" placeholder="برداشت خودکار مثلاً 2.0"></div>
-    <div class="row" style="margin:8px 0"><button class="ghost" onclick="q(0.5)">½</button><button class="ghost" onclick="q(2)">2×</button><button class="ghost" onclick="qa()">همه</button></div>
-    <button id="cbtn" style="width:100%;font-size:17px;padding:15px" onclick="crashAct()">ثبت شرط</button>
+<div id="winnerModal" onclick="this.classList.remove('show')">
+  <div class="wbox" onclick="event.stopPropagation()">
+    <div style="font-size:46px">🏆</div>
+    <h3 style="color:var(--gold);font-size:20px;margin-top:6px">برنده آرنا اعلام شد!</h3>
+    <div id="wWinnerName" style="font-size:22px;font-weight:900;margin:8px 0"></div>
+    <div id="wWinnerPrize" style="font-size:17px;color:#ff9ec7;font-weight:800;margin-bottom:14px"></div>
+    <button style="width:100%" onclick="document.getElementById('winnerModal').classList.remove('show')">ادامه بازی</button>
   </div>
-  <div class="glass card"><h3>بازیکنان این دور</h3><div id="plist"></div></div>
-</div></div>
+</div>
 
-<!-- ARENA SCREEN -->
-<div class="scr" id="s-arena"><div>
-  <div class="bk"><button class="ghost" onclick="closeScr()">‹ بازگشت</button><b>⚔️ آرنا</b><span class="grow"></span><div class="coins" onclick="openLedger()"><span class="coin"></span><span class="cc">0</span></div></div>
-  <div class="glass bank"><span>بانک</span><span class="coin"></span><span id="abank" style="color:var(--gold)">0</span><i id="abar" style="width:0"></i></div>
-  <div id="field"><div id="bands"></div><div id="acd"></div><div id="await">منتظر بازیکن...</div></div>
-  <div class="chips"><button onclick="joinA(1)">1</button><button onclick="joinA(5)">5</button><button onclick="joinA(10)">10</button><button onclick="joinA(50)">50</button><button onclick="joinCustom()">＋</button></div>
-  <div class="mut" style="text-align:center;margin-bottom:10px">۵٪ کمیسیون از برد کم می‌شود • سهم تو از بانک = شانس برد</div>
-  <div class="glass card"><div class="row" style="align-items:center"><h3 style="margin:0">بازیکنان</h3><span class="mut" style="text-align:left" id="agid"></span></div><div id="aplist"></div></div>
-  <div class="glass card"><h3>تاریخچه‌ی بازی‌ها</h3>
-    <div class="sub"><button class="on" onclick="hTab('latest',this)">آخرین</button><button onclick="hTab('lucky',this)">خوش‌شانس</button><button onclick="hTab('big',this)">بزرگ</button></div><div id="ahist"></div></div>
-</div></div>
+<div id="app">
+  <div class="top">
+    <div class="av" id="av"></div>
+    <div class="grow">
+      <div class="nm" id="nm"></div>
+      <div class="lv" id="lv"></div>
+      <div class="bar"><i id="xp"></i></div>
+    </div>
+    <button class="ghost" style="padding:8px 10px;border-radius:99px" id="sndBtn" onclick="toggleSound()">🔊</button>
+    <div class="coins" dir="ltr">💎 <span id="coins" class="num-pink">0</span> TON</div>
+  </div>
 
-<!-- WHEEL SCREEN -->
-<div class="scr" id="s-wheel"><div>
-  <div class="bk"><button class="ghost" onclick="closeScr()">‹ بازگشت</button><b>🎡 گردونه‌ی شانس</b></div>
-  <div class="glass card" style="text-align:center"><div class="pointer">▼</div><canvas id="wheel" width="520" height="520"></canvas>
-    <button id="wbtn" style="width:100%;margin-top:14px;font-size:17px;padding:15px" onclick="spin()">بچرخان</button></div>
-</div></div>
+  <div class="page on" id="p-games">
+    <div class="banner" onclick="openGame('crash')">
+      <div>
+        <span class="b-badge">DUAL BET + SHIELD • زنده</span>
+        <div style="font-size:19px;font-weight:900">🚀 بازی کرش (Crash)</div>
+        <small class="m">ورود از <b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON • سپر زیر <b class="num-pink">1.15x</b></small>
+      </div>
+      <div class="b-ico">🚀</div>
+    </div>
 
-<!-- LEDGER SCREEN -->
-<div class="scr" id="s-ledger"><div>
-  <div class="bk"><button class="ghost" onclick="closeScr()">‹ بازگشت</button><b id="ltitle">📜 سابقه‌ی مالی</b></div>
-  <div class="glass card" id="lbody"></div>
-</div></div>
+    <div class="banner" onclick="openGame('arena')">
+      <div>
+        <span class="b-badge" style="background:rgba(255,158,199,.18);color:#ff9ec7;border-color:rgba(255,158,199,.42)">CUSTOM STAKE ARENA • زنده</span>
+        <div style="font-size:19px;font-weight:900">⚡ بازی آرنا (Arena)</div>
+        <small class="m">مبلغ دلخواه از <b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON • استخر مشترک بدون میز!</small>
+      </div>
+      <div class="b-ico">⚡</div>
+    </div>
 
-<nav class="tabs"><div class="glass">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">🔥 ماموریت‌های TON و زنجیره برد</h3>
+        <span class="streak-pill">⚡ برد متوالی: <b id="streakNow" class="num-pink">0</b></span>
+      </div>
+      <small class="m" style="display:block;margin-bottom:8px">هر <b class="num-pink">3</b> برد متوالی = جایزه TON • بودجه فعال بونوس: <b id="promoPoolTxt" class="num-pink">0 TON</b></small>
+      <div id="missionsBox"></div>
+    </div>
+
+    <div class="card">
+      <h3>📊 آخرین ضریب‌های کرش</h3>
+      <div class="hist" id="ghist"></div>
+    </div>
+  </div>
+
+  <div class="page" id="p-crash">
+    <button class="ghost" style="margin-bottom:10px;padding:7px 12px" onclick="go('games',document.querySelector('.tabs button'))">← بازگشت به بازی‌ها</button>
+    <div class="hist" id="hist"></div>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div class="stage-overlay">
+        <div id="mult" class="m-plain">1.00x</div>
+        <div id="liveTop3"></div>
+      </div>
+      <div id="sub"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <small class="m" style="display:block;margin-bottom:8px">محدوده ورود به بازی: <b class="num-pink">0.01 TON</b> تا <b class="num-pink">50 TON</b></small>
+
+      <div class="dual-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b>🎯 پنل شرط ۱ (TON)</b>
+          <small class="m" id="stA"></small>
+        </div>
+        <div class="row">
+          <input id="amtA" type="number" step="0.01" min="0.01" max="50" value="0.01" placeholder="مبلغ TON شرط ۱">
+          <input id="autoA" type="number" step="0.1" value="1.6" placeholder="برداشت خودکار (مثلاً 1.6)">
+        </div>
+        <label class="shield-lbl">
+          <input type="checkbox" id="shA">
+          <span>🛡️ سپر ضد انفجار (+<b class="num-pink">15%</b> هزینه؛ زیر <b class="num-pink">1.15x</b> = <b class="num-pink">50%</b> بازگشت)</span>
+        </label>
+        <div class="row" style="margin-bottom:8px">
+          <button class="ghost" style="padding:7px" onclick="qSlot('a',0.5)">½</button>
+          <button class="ghost" style="padding:7px" onclick="qSlot('a',2)">2×</button>
+          <button class="ghost" style="padding:7px" onclick="qaSlot('a')">همه</button>
+        </div>
+        <button id="btnA" style="width:100%" onclick="slotAct('a')">ثبت شرط ۱</button>
+      </div>
+
+      <div class="dual-box" style="margin-bottom:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b>🚀 پنل شرط ۲ (TON)</b>
+          <small class="m" id="stB"></small>
+        </div>
+        <div class="row">
+          <input id="amtB" type="number" step="0.01" min="0.01" max="50" value="0.01" placeholder="مبلغ TON شرط ۲">
+          <input id="autoB" type="number" step="0.1" placeholder="برداشت خودکار (مثلاً 3.0)">
+        </div>
+        <label class="shield-lbl">
+          <input type="checkbox" id="shB">
+          <span>🛡️ سپر ضد انفجار (+<b class="num-pink">15%</b> هزینه؛ زیر <b class="num-pink">1.15x</b> = <b class="num-pink">50%</b> بازگشت)</span>
+        </label>
+        <div class="row" style="margin-bottom:8px">
+          <button class="ghost" style="padding:7px" onclick="qSlot('b',0.5)">½</button>
+          <button class="ghost" style="padding:7px" onclick="qSlot('b',2)">2×</button>
+          <button class="ghost" style="padding:7px" onclick="qaSlot('b')">همه</button>
+        </div>
+        <button id="btnB" style="width:100%" onclick="slotAct('b')">ثبت شرط ۲</button>
+      </div>
+    </div>
+
+    <div class="card"><h3>بازیکنان این دور</h3><div id="plist"></div></div>
+  </div>
+
+  <div class="page" id="p-arena">
+    <button class="ghost" style="margin-bottom:10px;padding:7px 12px" onclick="go('games',document.querySelector('.tabs button'))">← بازگشت به بازی‌ها</button>
+    <div id="arenaStage"></div>
+  </div>
+
+  <div class="page" id="p-wheel">
+    <div class="card" style="text-align:center">
+      <h3>🎡 گردونه‌ی روزانه TON</h3>
+      <small class="m" style="display:block;margin-bottom:6px">شانس: <b class="num-pink">0.01</b> TON (<b class="num-cyan">99%</b>) • <b class="num-pink">0.1</b> TON (<b class="num-gold">1%</b>)</small>
+      <div class="pointer">▼</div>
+      <canvas id="wheel" width="440" height="440"></canvas>
+      <button id="wbtn" style="width:100%;margin-top:10px" onclick="spin()">بچرخان</button>
+    </div>
+    <div class="card">
+      <h3>🏷 جایزه‌ی اسم ربات</h3>
+      <small class="m">آیدی ربات (<b id="botun" class="num-lav"></b>) را در اسم پروفایل تلگرامتان بگذارید و هر <b class="num-pink">24</b> ساعت <b class="num-pink">0.01</b> TON بگیرید.</small>
+      <button id="tbtn" class="o" style="width:100%;margin-top:10px" onclick="tag()">بررسی و دریافت 0.01 TON</button>
+    </div>
+  </div>
+
+  <div class="page" id="p-lb">
+    <div class="sub">
+      <button class="on" onclick="lbTab('circulation',this)">در گردش</button>
+      <button onclick="lbTab('winners',this)">بیشترین برد</button>
+      <button onclick="lbTab('rich',this)">ثروتمندترین</button>
+    </div>
+    <div class="card" id="lbbox"></div>
+  </div>
+
+  <div class="page" id="p-me">
+    <div class="card" style="text-align:center">
+      <div class="av" style="width:76px;height:76px;margin:0 auto 8px;font-size:28px" id="av2"></div>
+      <div class="nm" id="nm2" style="font-size:18px"></div>
+      <div class="lv" id="lv2"></div>
+    </div>
+
+    <div class="card">
+      <h3>💎 کیف TON</h3>
+      <div style="font-size:28px;font-weight:900;text-align:center;margin-bottom:10px" dir="ltr">
+        💎 <span id="w2" class="num-pink">0</span> <span class="num-cyan">TON</span>
+      </div>
+
+      <div class="ton-box" style="margin-top:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b>واریز مستقیم با Tonkeeper</b>
+          <small id="tonWalletBadge" class="m">کیف‌پول متصل نشده</small>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="ghost" onclick="setDepTon(0.05)"><span class="num-pink">0.05</span> TON</button>
+          <button class="ghost" onclick="setDepTon(0.1)"><span class="num-pink">0.1</span> TON</button>
+          <button class="ghost" onclick="setDepTon(0.5)"><span class="num-pink">0.5</span> TON</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input id="depTonAmt" type="number" step="0.01" min="0.01" max="50" value="0.1" placeholder="مقدار TON (0.01 تا 50)">
+          <button class="ton" id="tonPayBtn" onclick="depositWithTonkeeper()">واریز با Tonkeeper</button>
+        </div>
+        <button class="ghost" style="width:100%;margin-top:8px" id="tonConnectBtn" onclick="connectTonWallet()">اتصال / تغییر کیف‌پول Tonkeeper</button>
+
+        <div id="tonPendingBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)">
+          <small class="pill-wait" id="tonPendingTxt">در انتظار تایید تراکنش روی شبکه TON...</small>
+          <div class="row" style="margin-top:6px">
+            <button class="g" style="padding:8px" onclick="verifyTonNow()">بررسی و ثبت واریز</button>
+            <button class="ghost" style="padding:8px" onclick="reopenTonkeeperLink()">باز کردن مجدد Tonkeeper</button>
+          </div>
+        </div>
+
+        <details style="margin-top:8px">
+          <summary style="font-size:11px;color:var(--mut);cursor:pointer">مشاهده آدرس و ممو (کپی دستی در صورت نیاز)</summary>
+          <div class="mono-pill">
+            <span id="tonAddrDisp">EQBmLDcxBiP21Vn4Jet3Th-DWyNl8JVmsbdAi8FvxHT38aiu</span>
+            <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonAddrDisp').textContent,'آدرس TON کپی شد')">کپی</button>
+          </div>
+          <div class="mono-pill">
+            <span>Memo: <b id="tonMemoDisp" class="num-pink">398101056984149</b></span>
+            <button class="ghost" style="padding:4px 8px;font-size:11px;flex:0 0 auto" onclick="copyText($('tonMemoDisp').textContent,'ممو کپی شد')">کپی</button>
+          </div>
+        </details>
+      </div>
+
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:12px 0">
+
+      <div>
+        <small class="m">درخواست برداشت TON (حداقل <b class="num-pink">0.2</b> TON • <b class="num-pink">10%</b> مالیات کسر می‌شود):</small>
+        <div class="row" style="margin-top:8px">
+          <input id="wdAmt" type="number" step="0.01" min="0.2" placeholder="مقدار TON (حداقل 0.2)">
+          <button class="o" onclick="requestWithdraw()">ثبت برداشت</button>
+        </div>
+        <input id="wdTon" type="text" placeholder="آدرس کیف‌پول TON مقصد" style="margin-top:8px;direction:ltr;text-align:left">
+        <div id="wdCalc" style="font-size:12px;color:var(--mut);margin-top:6px">مالیات <span class="num-pink">10%</span>: <span class="num-pink">0</span> TON • دریافتی خالص: <span class="num-pink">0</span> TON</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🤝 دعوت از دوستان (رفرال)</h3>
+      <small class="m">با دعوت هر دوست، <b class="num-pink">8%</b> از هر واریز TON و <b class="num-pink">0.5%</b> از هر بازی TON او را پاداش بگیرید!</small>
+      <div class="stat" style="margin:10px 0">
+        <div><b id="refCnt" class="num-pink">0</b><small>تعداد زیرمجموعه‌ها</small></div>
+        <div><b id="refEarn" class="num-pink">0 TON</b><small>کل درآمد رفرال</small></div>
+      </div>
+      <div class="row">
+        <input id="refLink" readonly style="font-size:12px;direction:ltr" value="در حال ساخت لینک...">
+        <button class="g" style="flex:0 0 auto" onclick="copyRef()">کپی لینک</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💬 پشتیبانی</h3>
+      <small class="m" style="display:block;margin-bottom:8px">سوال، مشکل یا پیامی دارید؟ مستقیماً در ربات تلگرام پیام یا <b>عکس</b> بفرستید تا به دست ادمین برسه.</small>
+      <button class="ghost" style="width:100%" onclick="openSupportBot()">باز کردن چت پشتیبانی در ربات</button>
+    </div>
+
+    <div class="card">
+      <h3>📊 آمار</h3>
+      <div class="stat" id="stats"></div>
+    </div>
+
+    <div class="card">
+      <h3>📜 سابقه مالی و بازی‌ها</h3>
+      <div class="sub">
+        <button class="on" onclick="meHistTab('tx',this)">سابقه مالی</button>
+        <button onclick="meHistTab('games',this)">سابقه بازی‌ها</button>
+      </div>
+      <div id="meHistBox"></div>
+    </div>
+  </div>
+
+  <div class="page" id="p-admin">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div>
+        <h3 style="margin:0">🛠 پنل مدیریت Tonia</h3>
+        <small class="m">مدیریت کاربران، پیام‌ها، مالی و تنظیمات</small>
+      </div>
+      <div class="coins" dir="ltr">👥 <span id="admTotalPlayers" class="num-pink">0</span></div>
+    </div>
+
+    <div class="card">
+      <h3>👥 جستجو و مدیریت بازیکنان</h3>
+      <input id="admPlayerSearch" type="text" placeholder="جستجو با آیدی عددی، @یوزرنیم یا نام بازیکن..." oninput="renderAdminPlayersList()">
+      <div id="ausers" style="margin-top:10px;max-height:280px;overflow-y:auto"></div>
+      <div id="auserDetail" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h3>📢 ارسال پیام همگانی به همه کاربران</h3>
+      <small class="m" style="display:block;margin-bottom:8px">این پیام برای همه کاربران ربات در تلگرام ارسال می‌شود.</small>
+      <textarea id="broadcastText" placeholder="متن پیام همگانی را اینجا بنویسید..."></textarea>
+      <button class="ton" id="broadcastBtn" style="width:100%;margin-top:8px" onclick="adminBroadcast()">ارسال پیام به همه</button>
+      <div id="broadcastStatus" style="font-size:12px;color:var(--ok);margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3>🏦 تنظیم آدرس و ممو TON واریز</h3>
+      <input id="admTonAddr" type="text" placeholder="آدرس TON مقصد" style="direction:ltr;text-align:left;margin-bottom:8px">
+      <input id="admTonMemo" type="text" placeholder="ممو (Memo / Comment)" style="direction:ltr;text-align:left;margin-bottom:8px">
+      <button class="ton" style="width:100%" onclick="adminSaveTonConfig()">ذخیره آدرس و ممو TON</button>
+    </div>
+
+    <div class="card">
+      <h3>🎁 مدیریت بودجه بونوس (اضافه / کم کردن TON)</h3>
+      <small class="m" style="display:block;margin-bottom:8px">بودجه فعلی بونوس: <b id="admBonusPool" class="num-pink">0 TON</b></small>
+      <input id="admBonusDelta" type="number" step="0.01" placeholder="مقدار TON بونوس (مثلاً 0.5 یا -0.2)">
+      <div class="row" style="margin-top:8px">
+        <button class="g" onclick="adminBonusDelta(1)">+ اضافه به بونوس</button>
+        <button class="r" onclick="adminBonusDelta(-1)">- کم کردن از بونوس</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🎯 مدیریت ماموریت‌ها (افزودن / حذف / فعال‌سازی)</h3>
+      <input id="mTitle" type="text" placeholder="عنوان ماموریت (مثلاً: دعوت ۱۲ عضو جدید)" style="margin-bottom:8px">
+      <div class="row" style="margin-bottom:8px">
+        <select id="mType">
+          <option value="referral">دعوت عضو (Referral)</option>
+          <option value="crash_streak_4x">برد متوالی ضریب بالا کرش</option>
+          <option value="arena_streak">ورود به آرنا + برد متوالی</option>
+        </select>
+        <input id="mTarget" type="number" min="1" step="1" placeholder="هدف (مثلاً 12)">
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <input id="mReward" type="number" min="0.001" step="0.01" placeholder="جایزه TON (مثلاً 0.1)">
+        <input id="mMinStreak" type="number" min="0" step="1" placeholder="حداقل برد متوالی (مثلاً 3)">
+      </div>
+      <button class="g" style="width:100%;margin-bottom:10px" onclick="adminAddMission()">افزودن ماموریت جدید</button>
+      <div id="amissionsList"></div>
+    </div>
+
+    <div class="card">
+      <h3>💰 شارژ / مدیریت سریع کاربر</h3>
+      <input id="aid" placeholder="آیدی عددی یا @username کاربر">
+      <input id="aamt" type="number" step="0.01" placeholder="مقدار TON (منفی = کم کردن)" style="margin-top:8px">
+      <div class="row" style="margin-top:8px">
+        <button class="g" onclick="adminCoins()">اعمال موجودی</button>
+        <button class="r" onclick="adminBan(true)">بن</button>
+        <button class="ghost" onclick="adminBan(false)">آزاد</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🌐 افزایش / کاهش TON برای همه کاربران</h3>
+      <small class="m" style="display:block;margin-bottom:8px">مقدار مثبت به همه اضافه می‌کند و مقدار منفی از همه کم می‌کند (موجودی زیر ۰ نمی‌رود).</small>
+      <input id="bulkAmt" type="number" step="0.01" placeholder="مقدار TON (مثلاً 0.05 یا -0.05)">
+      <div class="row" style="margin-top:8px">
+        <button class="g" onclick="adminBulkCoins(1)">اضافه به همه</button>
+        <button class="r" onclick="adminBulkCoins(-1)">کم کردن از همه</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💎 واریزهای انجام‌شده به ربات</h3>
+      <small class="m" style="display:block;margin-bottom:8px">لیست تمام واریزهای تاییدشده کاربران به همراه آیدی واریزکننده و مبلغ TON</small>
+      <div id="adeposits" style="max-height:260px;overflow-y:auto"></div>
+    </div>
+
+    <div class="card">
+      <h3>💸 درخواست‌های برداشت TON در انتظار تایید</h3>
+      <small class="m" style="display:block;margin-bottom:8px">هشدار ضدتقلب به صورت خودکار گردش بازی، واریزها و شارژهای دستی کاربر را بررسی می‌کند.</small>
+      <div id="awithdrawals"></div>
+    </div>
+
+    <div class="card">
+      <h3>🎯 الگوریتم ضریب و بودجه بونوس</h3>
+      <div class="row">
+        <input id="smin" placeholder="حداقل ضریب">
+        <input id="smax" placeholder="حداکثر ضریب">
+      </div>
+      <div class="row" style="margin:8px 0">
+        <input id="sedge" placeholder="لبه (مثلاً 0.08)">
+        <input id="sgreed" placeholder="میزان طمع 0 تا 1 (مثلاً 0.42)">
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <input id="spool" placeholder="بودجه بونوس و ماموریت (TON)">
+      </div>
+      <button style="width:100%" onclick="adminSettings()">ذخیره تنظیمات</button>
+    </div>
+
+    <div class="card">
+      <h3>🎲 صف ضریب‌های بعدی کرش</h3>
+      <input id="aq" placeholder="مثلاً 1.8 3.5 2.2 12" style="margin-bottom:8px">
+      <button style="width:100%" onclick="adminQueue()">ذخیره صف</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs"><div>
   <button class="on" onclick="go('games',this)"><b>🎮</b>بازی‌ها</button>
+  <button onclick="go('wheel',this)"><b>🎡</b>گردونه</button>
   <button onclick="go('lb',this)"><b>🏆</b>لیدربرد</button>
   <button onclick="go('me',this)"><b>👤</b>پروفایل</button>
   <button id="admtab" style="display:none" onclick="go('admin',this)"><b>🛠</b>ادمین</button>
-</div></nav>
+</div></div>
 
 <script>
-const tg=window.Telegram&&Telegram.WebApp; if(tg){try{tg.ready();tg.expand();tg.setHeaderColor&&tg.setHeaderColor('#050816');tg.setBackgroundColor&&tg.setBackgroundColor('#050816')}catch(e){}}
-const DEV_UID=new URLSearchParams(location.search).get('dev');
-async function api(p,body){
-  const h={'content-type':'application/json','x-init-data':tg?tg.initData:''}; if(DEV_UID)h['x-dev-user']=DEV_UID;
-  const r=await fetch('/api/'+p,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined});
-  const j=await r.json(); if(!r.ok){toast(j.error||'خطا');throw j} return j;
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const qs = new URLSearchParams(location.search);
+const DEV_UID = qs.get('dev');
+const REF_PARAM = qs.get('ref') || (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+const $ = id => document.getElementById(id);
+
+setTimeout(() => { const sp = $('splash'); if (sp) sp.classList.add('hide'); }, 1850);
+
+let soundOn = true, audioCtx = null;
+function beep(freq = 520, dur = 0.09, type = 'sine', vol = 0.08) {
+  if (!soundOn) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = type; osc.frequency.value = freq; g.gain.value = vol;
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+  } catch {}
 }
-const $=id=>document.getElementById(id);
-function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2600)}
-const fmt=n=>Number(n).toLocaleString('en',{maximumFractionDigits:2});
-const ms2t=ms=>{const s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h+':'+String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const avHtml=(u)=>u.photo?`<img src="${esc(u.photo)}" onerror="this.remove()">`:esc((u.name||'?')[0]);
+function toggleSound() {
+  soundOn = !soundOn;
+  $('sndBtn').textContent = soundOn ? '🔊' : '🔇';
+  toast(soundOn ? 'صدا روشن شد' : 'صدا خاموش شد');
+}
 
-/* ---------- splash ---------- */
-'COSMO ROCKET'.split('').forEach((c,i)=>{const s=document.createElement('span');s.textContent=c===' '?' ':c;s.style.animationDelay=(0.5+i*0.07)+'s';$('logo').appendChild(s)});
-setTimeout(()=>{$('splash').classList.add('out');setTimeout(()=>$('splash').remove(),800)},2900);
+document.addEventListener('pointermove', e => {
+  const el = e.target.closest('.card, .banner');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+  const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+  el.style.transform = `perspective(750px) rotateX(${(-dy * 5.5).toFixed(2)}deg) rotateY(${(dx * 5.5).toFixed(2)}deg) translateZ(5px)`;
+});
+document.addEventListener('pointerout', e => {
+  const el = e.target.closest('.card, .banner');
+  if (el) el.style.transform = '';
+});
 
-/* ---------- sound ---------- */
-let AC=null,muted=false,eng=null;
-try{muted=localStorage.getItem('mute')==='1'}catch(e){}
-function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
-addEventListener('pointerdown',()=>ac(),{once:true});
-function tone(f,d=.15,type='sine',v=.12,slide=0,delay=0){if(muted)return;const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+delay;o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
-function noise(d=.6,v=.25,lp=1200){if(muted)return;const a=ac();if(!a)return;const n=a.sampleRate*d,b=a.createBuffer(1,n,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);const s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(lp,a.currentTime);f.frequency.exponentialRampToValueAtTime(80,a.currentTime+d);g.gain.value=v;s.buffer=b;s.connect(f).connect(g).connect(a.destination);s.start()}
-const SND={bet(){tone(520,.1,'triangle',.12);tone(780,.12,'triangle',.1,0,.08)},launch(){noise(1.2,.18,2500);tone(110,.9,'sawtooth',.06,400)},
- win(big){[660,830,990,1320].forEach((f,i)=>tone(f,.25,'triangle',.13,0,i*.07));if(big)[1580,1980].forEach((f,i)=>tone(f,.4,'sine',.1,0,.3+i*.1))},
- boom(){noise(1,.5,900);tone(90,.7,'sawtooth',.15,-60)},tick(){tone(900,.05,'square',.04)},coin(){tone(1320,.08,'square',.06);tone(1760,.12,'square',.06,0,.06)}};
-function engine(on,m=1){if(muted)on=false;const a=ac();if(!a)return;if(on){if(!eng){const o=a.createOscillator(),g=a.createGain();o.type='sawtooth';g.gain.value=.025;o.connect(g).connect(a.destination);o.start();eng={o,g}}eng.o.frequency.value=70+Math.log(m+.2)*95}else if(eng){try{eng.o.stop()}catch(e){}eng=null}}
-function toggleSnd(){muted=!muted;try{localStorage.setItem('mute',muted?'1':'0')}catch(e){}$('snd').textContent=muted?'🔇':'🔊';if(muted)engine(false)}
-$('snd').textContent=muted?'🔇':'🔊';
+async function api(p, body) {
+  const h = { 'content-type': 'application/json', 'x-init-data': tg ? tg.initData : '' };
+  if (DEV_UID) h['x-dev-user'] = DEV_UID;
+  if (REF_PARAM) h['x-ref'] = REF_PARAM;
+  const r = await fetch('/api/' + p, { method: body ? 'POST' : 'GET', headers: h, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (!r.ok && r.status !== 202) { toast(j.error || 'خطا'); throw j; }
+  return j;
+}
+function toast(t) {
+  const e = $('toast'); e.textContent = t; e.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 2800);
+}
+function copyText(txt, msg = 'کپی شد') {
+  navigator.clipboard?.writeText(String(txt || ''));
+  toast('✅ ' + msg);
+}
+const fmt = n => {
+  const v = Number(n || 0);
+  if (!isFinite(v)) return '0';
+  return Number(v.toFixed(4)).toString();
+};
+const numColorClass = idx => ['num-pink', 'num-cyan', 'num-gold', 'num-mint', 'num-lav'][idx % 5];
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '';
+const ms2t = ms => {
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h + ':' + String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+};
+const cleanBotName = s => String(s || '').trim().replace(/^@+/, '');
 
-/* ---------- background stars ---------- */
-(function(){const c=$('bgc'),x=c.getContext('2d');let S=[];function rs(){c.width=innerWidth;c.height=innerHeight;S=Array.from({length:120},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5+.3,v:Math.random()*.25+.04,p:Math.random()*6}))}
-rs();addEventListener('resize',rs);(function f(t){x.clearRect(0,0,c.width,c.height);S.forEach(s=>{s.y+=s.v;if(s.y>c.height)s.y=0;x.globalAlpha=.35+.35*Math.sin(t/700+s.p);x.fillStyle='#fff';x.beginPath();x.arc(s.x,s.y,s.r,0,7);x.fill()});requestAnimationFrame(f)})(0)})();
+let tonConnectUI = null, connectedTonAddress = '', activeTonOrder = null, tonPollTimer = null;
+function initTonConnect() {
+  try {
+    if (!window.TON_CONNECT_UI) return;
+    tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: `${location.origin}/tonconnect-manifest.json`
+    });
+    tonConnectUI.uiOptions = {
+      twaReturnUrl: cleanBotName(botUsername) ? `https://t.me/${cleanBotName(botUsername)}` : location.origin
+    };
+    tonConnectUI.onStatusChange(wallet => {
+      if (wallet && wallet.account && wallet.account.address) {
+        connectedTonAddress = wallet.account.address;
+        const shortAddr = connectedTonAddress.slice(0, 6) + '...' + connectedTonAddress.slice(-5);
+        $('tonWalletBadge').innerHTML = `<span class="pill-ok">متصل: ${shortAddr}</span>`;
+        $('tonConnectBtn').textContent = 'تغییر کیف‌پول Tonkeeper';
+      } else {
+        connectedTonAddress = '';
+        $('tonWalletBadge').textContent = 'کیف‌پول متصل نشده';
+        $('tonConnectBtn').textContent = 'اتصال / تغییر کیف‌پول Tonkeeper';
+      }
+    });
+  } catch (e) {
+    console.warn('TonConnect init skipped', e);
+  }
+}
+async function connectTonWallet() {
+  if (!tonConnectUI) initTonConnect();
+  if (!tonConnectUI) return toast('در حال بارگذاری TonConnect...');
+  try {
+    await tonConnectUI.openModal();
+  } catch {}
+}
 
-/* ---------- confetti ---------- */
-const cc=$('conf'),cx2=cc.getContext('2d');let CP=[];
-function confetti(n=120,rainbow=true){cc.width=innerWidth;cc.height=innerHeight;for(let i=0;i<n;i++)CP.push({x:innerWidth/2,y:innerHeight*.45,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,r:Math.random()*6+3,c:rainbow?`hsl(${Math.random()*360},90%,60%)`:'#ffc94d',a:1,rot:Math.random()*6});if(!confetti.on){confetti.on=1;(function f(){cx2.clearRect(0,0,cc.width,cc.height);CP=CP.filter(p=>p.a>0.02);CP.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.vx*=.99;p.a-=.011;p.rot+=.2;cx2.save();cx2.globalAlpha=Math.max(0,p.a);cx2.translate(p.x,p.y);cx2.rotate(p.rot);cx2.fillStyle=p.c;cx2.fillRect(-p.r,-p.r/2,p.r*2,p.r);cx2.restore()});if(CP.length)requestAnimationFrame(f);else{confetti.on=0;cx2.clearRect(0,0,cc.width,cc.height)}})()}}
+function setDepTon(v) {
+  $('depTonAmt').value = v;
+}
+function startTonVerificationLoop() {
+  clearInterval(tonPollTimer);
+  let attempts = 0;
+  tonPollTimer = setInterval(async () => {
+    if (!activeTonOrder) return clearInterval(tonPollTimer);
+    attempts++;
+    if (attempts > 45) return clearInterval(tonPollTimer);
+    await verifyTonNow(true);
+  }, 4000);
+}
+async function verifyTonNow(silent = false) {
+  if (!activeTonOrder) return;
+  try {
+    const r = await api('ton/verify', {
+      orderId: activeTonOrder.orderId,
+      senderAddress: connectedTonAddress
+    });
+    if (r && r.ok) {
+      clearInterval(tonPollTimer);
+      $('tonPendingBox').style.display = 'none';
+      activeTonOrder = null;
+      beep(880, 0.18, 'triangle', 0.14);
+      toast(`💎 تایید شد! +${fmt(r.tonPaid)} TON به موجودی اضافه شد.`);
+      poll();
+    } else if (!silent) {
+      toast(r.error || 'هنوز تراکنش روی شبکه TON تایید نشده است');
+    }
+  } catch {}
+}
+function reopenTonkeeperLink() {
+  if (!activeTonOrder) return;
+  const url = activeTonOrder.tonkeeperUniversal;
+  if (tg && tg.openLink) tg.openLink(url);
+  else window.open(url, '_blank');
+}
+async function depositWithTonkeeper() {
+  const tonAmount = Number($('depTonAmt').value || 0);
+  if (!isFinite(tonAmount) || tonAmount < 0.01 || tonAmount > 50) return toast('مبلغ واریز باید بین 0.01 تا 50 TON باشد');
+  try {
+    const prep = await api('ton/prepare', {
+      tonAmount,
+      senderAddress: connectedTonAddress
+    });
+    activeTonOrder = prep;
+    $('tonPendingBox').style.display = 'block';
+    $('tonPendingTxt').textContent = `در انتظار تایید ${fmt(prep.tonAmount)} TON روی بلاک‌چین...`;
+    startTonVerificationLoop();
 
-/* ---------- nav ---------- */
-let st=null,me=null,tab='games',scr=null,syncT=0,lbKey='circulation';
-function go(t,b){tab=t;document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));$('p-'+t).classList.add('on');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  if(t==='lb')lbTab(lbKey,document.querySelector('#p-lb .sub button'));if(t==='admin')loadAdmin();scrollTo(0,0)}
-function openScr(n){scr=n;document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));$('s-'+n).classList.add('on');if(n==='wheel')drawWheel();ac()}
-function closeScr(){scr=null;engine(false);document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'))}
-// banner dots
-(function(){const b=$('ban'),d=[...$('dots').children];b.addEventListener('scroll',()=>{const i=Math.round(Math.abs(b.scrollLeft)/(b.firstElementChild.offsetWidth+10));d.forEach((x,k)=>x.classList.toggle('on',k===Math.min(i,2)))});let n=0;setInterval(()=>{if(tab!=='games'||scr)return;n=(n+1)%3;b.scrollTo({left:(b.firstElementChild.offsetWidth+10)*n*(getComputedStyle(b).direction==='rtl'?-1:1),behavior:'smooth'})},4200)})();
-// 3D tilt
-document.querySelectorAll('.gc').forEach(c=>{c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`rotateY(${x*18}deg) rotateX(${-y*18}deg)`});['pointerleave','pointerup'].forEach(ev=>c.addEventListener(ev,()=>c.style.transform=''))});
+    if (tonConnectUI && tonConnectUI.connected) {
+      try {
+        await tonConnectUI.sendTransaction({
+          validUntil: Math.floor(Date.now() / 1000) + 600,
+          messages: [
+            {
+              address: prep.address,
+              amount: prep.nanoAmount,
+              payload: prep.payloadBoc
+            }
+          ]
+        });
+        toast('✅ تراکنش در Tonkeeper تایید شد؛ در حال ثبت روی شبکه...');
+        setTimeout(() => verifyTonNow(false), 2500);
+        return;
+      } catch (err) {
+        toast('تراکنش در کیف‌پول لغو شد یا در حال باز کردن Tonkeeper...');
+      }
+    }
 
-function setUser(u){me=u;$('nm').textContent=$('nm2').textContent=u.name;
-  $('av').innerHTML=$('av2').innerHTML=avHtml(u);
-  $('lv').textContent=$('lv2').textContent='سطح '+u.level;$('coins').textContent=$('w2').textContent=fmt(u.coins);document.querySelectorAll('.cc').forEach(e=>e.textContent=fmt(u.coins));
-  const T=[0,50,150,400,900,1800,3500,7000,14000,30000,1e9],lo=T[u.level-1]||0,hi=T[u.level];$('xp').style.width=Math.min(100,(u.xp-lo)/(hi-lo)*100)+'%';
-  $('stats').innerHTML=[['بازی‌ها',u.games],['برد',u.wins],['بیشترین ضریب',u.bestMult+'x'],['در گردش',fmt(u.wagered)],['مجموع برد',fmt(u.won)],['XP',u.xp]].map(a=>`<div><b>${a[1]}</b><small>${a[0]}</small></div>`).join('');
-  if(u.isAdmin)$('admtab').style.display='';
-  $('wbtn').disabled=u.wheelIn>0;$('wbtn').textContent=u.wheelIn>0?'بعدی: '+ms2t(u.wheelIn):'بچرخان';
-  $('tbtn').disabled=u.tagIn>0;$('tbtn').textContent=u.tagIn>0?'بعدی: '+ms2t(u.tagIn):'بررسی و دریافت ۵ سکه'}
+    if (tg && tg.openLink) {
+      tg.openLink(prep.tonkeeperUniversal);
+    } else {
+      window.open(prep.tonkeeperUniversal, '_blank');
+    }
+  } catch {}
+}
 
-/* ---------- multiplier tiers ---------- */
-const tier=m=>m>=25?5:m>=10?4:m>=5?3:m>=2?2:m>=1.5?1:0;
-const TC=['#e9ecff','#3ddc97','#4aa3ff','#b36bff','#ffd54a','#ff5d7a'];
-function setMultColor(el,m){const t=tier(m);if(t===5){el.style.cssText+=';background:linear-gradient(90deg,#ff5d7a,#ffc94d,#3ddc97,#35e0ff,#b36bff,#ff5d7a);background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 1.5s linear infinite;text-shadow:none'}else{el.style.background='none';el.style.webkitBackgroundClip='';el.style.animation='none';el.style.color=TC[t];el.style.textShadow='0 0 28px '+TC[t]}}
+function multClass(v) {
+  if (v >= 15) return 'm-rainbow';
+  if (v >= 8) return 'm-yellow';
+  if (v >= 4.5) return 'm-purple';
+  if (v >= 2) return 'm-blue';
+  if (v >= 1.45) return 'm-green';
+  return 'm-plain';
+}
 
-/* ---------- crash ---------- */
-const cv=$('cv'),cx=cv.getContext('2d');let P=[],trail=[],lastPhase='',lastId=0,shock=null,hasBet=false,stars=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:Math.random()*2+.5}));
-function q(f){$('amt').value=Math.max(1,Math.floor($('amt').value*f))}function qa(){$('amt').value=Math.floor(me.coins)}
-async function crashAct(){const c=st.crash;
-  try{if(c.phase==='bet'&&!c.my){await api('crash/bet',{amount:$('amt').value,auto:$('auto').value});SND.bet()}
-  else if(c.phase==='run'&&c.my&&!c.my.cashed){const r=await api('crash/cashout',{});SND.win(r.mult>=5);toast('✅ '+r.mult+'x');if(r.mult>=10)confetti(r.mult>=25?200:100,r.mult>=25)}}catch{} poll()}
-function curMult(){const c=st.crash;if(c.phase==='run')return Math.exp(c.growth*(c.runningMs+(Date.now()-syncT))/1000);return c.phase==='crashed'?c.crashAt:1}
-function burst(x,y,n,cols,sp=9){for(let i=0;i<n;i++){const a=Math.random()*6.28,v=Math.random()*sp+1;P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:Math.random()*4+1.5,l:1,c:cols[Math.floor(Math.random()*cols.length)],g:.12})}}
-function plane(x,y,ang,s,col,flame){cx.save();cx.translate(x,y);cx.rotate(ang);cx.scale(s,s);
-  if(flame){const L=26+Math.random()*16;const g=cx.createLinearGradient(-20,0,-20-L,0);g.addColorStop(0,'rgba(255,210,90,.95)');g.addColorStop(1,'rgba(255,90,40,0)');cx.fillStyle=g;cx.beginPath();cx.moveTo(-18,-6);cx.lineTo(-20-L,0);cx.lineTo(-18,6);cx.fill()}
-  // 3D paper plane facets
-  const f=(pts,c)=>{cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fillStyle=c;cx.fill()};
-  f([[34,0],[-20,-20],[-8,0]],col[0]);f([[34,0],[-8,0],[-20,20]],col[1]);f([[-8,0],[-20,-20],[-14,0]],col[2]);f([[-8,0],[-14,0],[-20,20]],col[3]);
-  cx.strokeStyle='rgba(255,255,255,.5)';cx.lineWidth=1.2;cx.beginPath();cx.moveTo(34,0);cx.lineTo(-8,0);cx.stroke();cx.restore()}
-function drawCrash(){const c=st.crash,W=cv.width=cv.clientWidth*2,H=cv.height=cv.clientHeight*2;cx.clearRect(0,0,W,H);
-  const now=Date.now(),m=curMult(),t=tier(m);
-  // starfield streaking with speed
-  const sp=c.phase==='run'?Math.min(6,1+Math.log(m)*2.2):.4;cx.fillStyle='#fff';stars.forEach(s=>{s.y=(s.y+.0016*sp)%1;s.x=(s.x-.0009*sp+1)%1;cx.globalAlpha=.5;cx.fillRect(s.x*W,s.y*H,s.s*2,s.s*(1+sp*1.4))});cx.globalAlpha=1;
-  const prog=c.phase==='bet'?0:Math.min(1,Math.log(Math.max(1.0001,m))/Math.log(40));
-  const px=70+prog*(W-230),py=H-80-Math.pow(prog,.85)*(H-230);
-  if(c.phase==='run'){trail.push({x:px,y:py,l:1});if(trail.length>70)trail.shift()}
-  if(c.phase==='bet'){trail=[]}
-  // trail glow
-  if(trail.length>1){cx.lineCap='round';for(let i=1;i<trail.length;i++){const a=i/trail.length;cx.strokeStyle=t===5?`hsl(${(now/6+i*8)%360},90%,60%)`:TC[t];cx.globalAlpha=a*.55;cx.lineWidth=2+a*12;cx.beginPath();cx.moveTo(trail[i-1].x,trail[i-1].y);cx.lineTo(trail[i].x,trail[i].y);cx.stroke()}cx.globalAlpha=1}
-  // particles
-  P=P.filter(p=>p.l>0);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.l-=.018;cx.globalAlpha=Math.max(0,p.l);cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r*p.l+.5,0,7);cx.fill()});cx.globalAlpha=1;
-  if(shock){shock.r+=22;shock.a-=.03;if(shock.a<=0)shock=null;else{cx.strokeStyle=`rgba(255,200,120,${shock.a})`;cx.lineWidth=8;cx.beginPath();cx.arc(shock.x,shock.y,shock.r,0,7);cx.stroke()}}
-  if(c.phase==='run'){if(Math.random()<.9)burst(px-26*1.3,py+Math.random()*6,1,['#ffd25a','#ff8a3d','#fff'],2);const ang=-Math.PI/6-prog*.35;plane(px,py,ang,2.3,['#f2fbff','#b9d6ee','#8fb0cf','#6b8fb0'],true)}
-  else if(c.phase==='bet'){const bob=Math.sin(now/260)*6;plane(70,H-80+bob,-.35,2.3,['#f2fbff','#b9d6ee','#8fb0cf','#6b8fb0'],false)}
-  else{cx.font='110px serif';cx.globalAlpha=Math.max(0,1-(now-(c._cr||now))/1800);cx.fillText('💥',px-55,py+35);cx.globalAlpha=1}
-  // labels
-  const el=$('mult'),sub=$('msub');
-  if(c.phase==='bet'){const left=Math.max(0,c.betLeft-(now-syncT));el.textContent=Math.ceil(left/1000)+'s';setMultColor(el,1);sub.textContent=c.my?'شرط ثبت شد، موشک آماده‌ی پرتاب':'ثبت شرط...';
-    const n=Math.ceil(left/1000);const cd=$('cd');if(left<3300&&left>0){cd.style.display='grid';if(cd.textContent!=n){cd.textContent=n;SND.tick();cd.animate([{transform:'scale(1.6)',opacity:0},{transform:'scale(1)',opacity:.9},{transform:'scale(.8)',opacity:0}],{duration:900})}}else cd.style.display='none'}
-  else if(c.phase==='run'){$('cd').style.display='none';el.textContent=m.toFixed(2)+'x';setMultColor(el,m);sub.textContent=c.my&&!c.my.cashed?'برای برداشت بزن!':'';engine(true,m)}
-  else{engine(false);el.textContent='💥 '+c.crashAt.toFixed(2)+'x';el.style.background='none';el.style.animation='none';el.style.webkitBackgroundClip='';el.style.color='#ff5d7a';el.style.textShadow='0 0 30px #ff5d7a';sub.textContent='منفجر شد'}
-  const b=$('cbtn'),my=c.my;
-  if(c.phase==='bet'){b.textContent=my?`شرط ثبت شد (${my.amount})`:'ثبت شرط';b.disabled=!!my;b.className=''}
-  else if(c.phase==='run'&&my&&!my.cashed){b.textContent='برداشت '+fmt(my.amount*m);b.disabled=false;b.className='g'}
-  else{b.textContent=my&&my.cashed?`برد ${my.cashed}x ✅`:(c.phase==='crashed'&&my?'باختی 💥':'منتظر دور بعد');b.disabled=true;b.className=''}}
-function crashEvents(){const c=st.crash;
-  if(c.id!==lastId){lastId=c.id;trail=[]}
-  if(c.phase!==lastPhase){
-    if(c.phase==='run'){SND.launch();const W=cv.width,H=cv.height;burst(70,H-80,50,['#ffd25a','#ff8a3d','#fff'],7)}
-    if(c.phase==='crashed'){c._cr=Date.now();const W=cv.width,H=cv.height,m=c.crashAt,prog=Math.min(1,Math.log(Math.max(1.0001,m))/Math.log(40)),px=70+prog*(W-230),py=H-80-Math.pow(prog,.85)*(H-230);
-      burst(px,py,140,['#ff5d3d','#ffb43d','#ffe27a','#fff'],14);shock={x:px,y:py,r:10,a:.9};SND.boom();
-      $('stage').classList.remove('shake');void $('stage').offsetWidth;$('stage').classList.add('shake');const f=$('flash');f.animate([{opacity:.7},{opacity:0}],{duration:450});
-      if(c.my&&c.my.cashed&&c.my.cashed>=2)confetti(60,false)}
-    lastPhase=c.phase}}
-function renderCrash(){const c=st.crash;
-  $('hist').innerHTML=c.history.map(h=>`<span class="chip t${tier(h)}">${h.toFixed(2)}x</span>`).join('');
-  $('plist').innerHTML=c.players.map(p=>`<div class="pl"><span>${esc(p.name)}</span><span><span class="coin"></span> ${p.amount} ${p.cashed?`<b class="chip t${tier(p.cashed)}">${p.cashed}x</b>`:''}</span></div>`).join('')||'<div class="mut">هنوز کسی شرط نبسته</div>'}
-(function loop(){requestAnimationFrame(loop);if(st&&scr==='crash'){crashEvents();drawCrash()}else if(st){crashEvents()}})();
+(function () {
+  const c = $('stars'), x = c.getContext('2d'); let S = [];
+  function rs() {
+    c.width = innerWidth; c.height = innerHeight;
+    S = Array.from({ length: 120 }, () => ({ x: Math.random() * c.width, y: Math.random() * c.height, r: Math.random() * 1.7 + .3, v: Math.random() * .28 + .05 }));
+  }
+  rs(); addEventListener('resize', rs);
+  (function f() {
+    x.clearRect(0, 0, c.width, c.height); x.fillStyle = '#fff';
+    S.forEach(s => { s.y += s.v; if (s.y > c.height) s.y = 0; x.globalAlpha = .35 + s.r / 3; x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); });
+    requestAnimationFrame(f);
+  })();
+})();
 
-/* ---------- arena ---------- */
-const PCOL=['#3a86ff','#8ac926','#ff595e','#ffca3a','#b36bff','#2ec4b6','#ff924c','#ff4fa3'];
-let seenGid=null,hTabK='latest',arenaPlayersKey='';
-function joinA(a){api('arena/join',{amount:a}).then(()=>{SND.coin();poll()}).catch(()=>{})}
-function joinCustom(){const v=prompt('مقدار سکه؟','20');if(v&&+v>=1)joinA(Math.floor(+v))}
-function renderArena(){const a=st.arena;$('abank').textContent=fmt(a.prize);$('agid').textContent='بازی #'+a.id;
-  const key=JSON.stringify(a.players.map(p=>[p.id,p.stake]));
-  if(key!==arenaPlayersKey){arenaPlayersKey=key;
-    let x=0;const slant=16;let html='',avs='';const n=a.players.length;
-    a.players.forEach((p,i)=>{const w=p.chance,x1=x,x2=x+w;x=x2;const L=i===0?-slant:x1,R=i===n-1?100+slant:x2;
-      html+=`<div class="band" style="background:${PCOL[i%PCOL.length]};clip-path:polygon(${L+slant}% 0,${R+slant}% 0,${R-slant}% 100%,${L-slant}% 100%)"></div>`;
-      const cxp=(L+R)/2;avs+=`<div class="pav ${p.id===me.id?'me':''}" style="left:${cxp}%;top:${28+(i%3)*22}%;background:${PCOL[i%PCOL.length]}">${avHtml(p)}</div>`});
-    $('bands').innerHTML=html+avs}
-  $('await').style.display=n0(a)?'block':'none';$('await').textContent=a.players.length===0?'منتظر بازیکن...':'منتظر یک بازیکن دیگر...';
-  const cd=$('acd');if(a.left!=null){const s=Math.ceil((a.left-(Date.now()-syncT))/1000);cd.style.display='grid';if(cd.textContent!=s&&s>=0){cd.textContent=s;if(s<=5)SND.tick()}$('abar').style.width=(1-Math.max(0,a.left-(Date.now()-syncT))/20000)*100+'%'}else{cd.style.display='none';$('abar').style.width='0'}
-  $('aplist').innerHTML=a.players.map((p,i)=>`<div class="hrow"><span class="pav" style="position:static;margin:0;width:34px;height:34px;font-size:14px;background:${PCOL[i%PCOL.length]}">${avHtml(p)}</span><div class="grow"><div class="nm">${esc(p.name)}</div><div class="mut">شانس ${p.chance}%</div></div><b style="color:var(--gold)"><span class="coin"></span> ${p.stake}</b></div>`).join('')||'<div class="mut">هنوز کسی وارد نشده</div>';
-  renderHist();
-  const l=a.last;if(l){if(seenGid===null)seenGid=l.gid;else if(l.gid>seenGid){seenGid=l.gid;showWin(l)}}}
-const n0=a=>a.players.length<2;
-function showWin(l){const mine=l.winnerId===me.id;if(scr!=='arena'&&!mine)return;
-  $('winbx').innerHTML=`<div style="font-size:15px;color:var(--mut)">بازی #${l.gid}</div><div class="av" style="width:90px;height:90px;margin:12px auto;font-size:34px;border:3px solid var(--gold)">${avHtml({photo:l.photo,name:l.winner})}</div><div style="font-size:20px;font-weight:900">${esc(l.winner)}</div><div style="font-size:30px;font-weight:900;color:var(--gold);margin:8px 0"><span class="coin"></span> ${fmt(l.prize)}</div><div class="mut">شانس برد ${l.chance}% • ${l.mult}x</div>${mine?'<div style="margin-top:10px;font-size:18px">🎉 تو بردی!</div>':''}`;
-  $('win').classList.add('on');SND.win(true);confetti(mine?220:90,true);setTimeout(()=>$('win').classList.remove('on'),4500)}
-function hTab(k,b){hTabK=k;document.querySelectorAll('#s-arena .sub button').forEach(x=>x.classList.remove('on'));b.classList.add('on');renderHist()}
-function renderHist(){let h=[...st.arena.hist];if(hTabK==='lucky')h=h.filter(x=>x.chance<50).sort((a,b)=>a.chance-b.chance);if(hTabK==='big')h=h.sort((a,b)=>b.prize-a.prize);
-  $('ahist').innerHTML=h.slice(0,15).map(x=>`<div class="hrow"><div class="av" style="width:36px;height:36px;font-size:14px">${avHtml({photo:x.photo,name:x.winner})}</div><div class="grow"><div class="nm">${esc(x.winner)} <span class="chip t${tier(x.mult)}">${x.mult}x</span></div><div class="mut">بازی #${x.gid} • شانس ${x.chance}%</div></div><b style="color:var(--gold)"><span class="coin"></span> ${fmt(x.prize)}</b></div>`).join('')||'<div class="mut">هنوز بازی‌ای انجام نشده</div>'}
+let st = null, me = null, botUsername = '', tab = 'games', arenaDraftAmt = '0.1', meHistMode = 'tx', lastArenaWinnerAt = 0, prevCrashPhase = '';
 
-/* ---------- wheel ---------- */
-const SEG=[1,2,4,8,10,2,4,2,4,1],WC={1:'#7c5cff',2:'#35e0ff',4:'#ffc94d',8:'#ff5d7a',10:'#3ddc97'};let rot=0;
-function drawWheel(){const c=$('wheel'),x=c.getContext('2d'),n=SEG.length,a=2*Math.PI/n;x.clearRect(0,0,520,520);
-  SEG.forEach((v,i)=>{const g=x.createRadialGradient(260,260,30,260,260,250);g.addColorStop(0,'#fff');g.addColorStop(.35,WC[v]);g.addColorStop(1,WC[v]);x.beginPath();x.moveTo(260,260);x.arc(260,260,250,i*a,(i+1)*a);x.fillStyle=g;x.fill();x.strokeStyle='rgba(5,8,22,.9)';x.lineWidth=4;x.stroke();
-    x.save();x.translate(260,260);x.rotate(i*a+a/2);x.fillStyle='#0b0f2a';x.font='900 40px sans-serif';x.textAlign='right';x.fillText(v,222,14);x.restore()});
-  x.beginPath();x.arc(260,260,34,0,7);x.fillStyle='#0b0f2a';x.fill();x.strokeStyle='#fff';x.lineWidth=4;x.stroke()}
-async function spin(){try{const r=await api('wheel',{});const n=SEG.length,a=360/n,idx=[];SEG.forEach((v,i)=>v===r.prize&&idx.push(i));const i=idx[Math.floor(Math.random()*idx.length)];
-  rot+=360*6+((270-(i*a+a/2))-(rot%360)+360)%360;$('wheel').style.transform=`rotate(${rot}deg)`;$('wbtn').disabled=true;
-  let k=0;const tk=setInterval(()=>{SND.tick();if(++k>40)clearInterval(tk)},110);
-  setTimeout(()=>{SND.win(r.prize>=8);confetti(r.prize>=8?160:70,true);toast('🎉 '+r.prize+' سکه برنده شدی!');poll()},4700)}catch{}}
-async function tag(){try{await api('tag',{});SND.win();toast('🎁 ۵ سکه دریافت شد');poll()}catch{}}
+function go(t, b) {
+  tab = t;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  $('p-' + t).classList.add('on');
+  if (b) {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  }
+  if (t === 'lb') lbTab('circulation', document.querySelector('#p-lb .sub button'));
+  if (t === 'me') renderMeHist();
+  if (t === 'admin') loadAdmin();
+}
+function openGame(g) {
+  tab = g;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  $('p-' + g).classList.add('on');
+  if (g === 'arena') renderArena(true);
+}
 
-/* ---------- ledger ---------- */
-const TX={crash_bet:['🚀','شرط کرش'],crash_win:['🚀','برد کرش'],arena_join:['⚔️','ورود آرنا'],arena_win:['🏆','برد آرنا'],wheel:['🎡','گردونه'],tag:['🏷','جایزه‌ی اسم'],bonus:['🎁','هدیه'],admin_add:['➕','شارژ ادمین'],admin_sub:['➖','کسر ادمین']};
-function ledgerHtml(tx){return tx.map(t=>{const m=TX[t.type]||['•',t.type],d=new Date(t.t);return `<div class="hrow"><div style="font-size:22px">${m[0]}</div><div class="grow"><div class="nm">${m[1]}${t.note&&t.note!==m[1]?' <span class="mut">'+esc(t.note)+'</span>':''}</div><div class="mut">${d.toLocaleDateString('fa-IR')} ${d.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})}</div></div><div style="text-align:left"><b class="${t.amt>=0?'pos':'neg'}">${t.amt>=0?'+':''}${fmt(t.amt)}</b><div class="mut">موجودی ${fmt(t.bal)}</div></div></div>`}).join('')||'<div class="mut">سابقه‌ای نیست</div>'}
-async function openLedger(){$('ltitle').textContent='📜 سابقه‌ی مالی';const d=await api('history');$('lbody').innerHTML=ledgerHtml(d.tx);openScr('ledger')}
+function updateRefLink() {
+  if (!me) return;
+  const bName = cleanBotName(botUsername || me.botUsername || '');
+  const link = bName
+    ? `https://t.me/${bName}?start=ref_${me.id}`
+    : `${location.origin}/?ref=ref_${me.id}`;
+  $('refLink').value = link;
+}
+function copyRef() {
+  const inp = $('refLink');
+  inp.select();
+  navigator.clipboard?.writeText(inp.value);
+  toast('✅ لینک دعوت کپی شد');
+}
+function openSupportBot() {
+  const bName = cleanBotName(botUsername || (me && me.botUsername) || '');
+  if (bName) {
+    const url = `https://t.me/${bName}`;
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
+  } else {
+    toast('پیام خود را مستقیماً در چت ربات تلگرام ارسال کنید');
+  }
+}
 
-/* ---------- leaderboard ---------- */
-async function lbTab(k,b){lbKey=k;document.querySelectorAll('#p-lb .sub button').forEach(x=>x.classList.remove('on'));if(b)b.classList.add('on');
-  const d=await api('leaderboard');$('lbbox').innerHTML=d[k].map((u,i)=>`<div class="lb"><span class="rk">${i<3?['🥇','🥈','🥉'][i]:i+1}</span><div class="av" style="width:34px;height:34px;font-size:14px">${avHtml(u)}</div><span class="grow nm">${esc(u.name)} <span class="mut">Lv${u.level}</span></span><b style="color:var(--gold)">${fmt(u.value)}</b></div>`).join('')||'<div class="mut">هنوز داده‌ای نیست</div>'}
+function renderMissionsAndStreak(u) {
+  $('streakNow').textContent = u.streak || 0;
+  $('promoPoolTxt').textContent = fmt(u.promoPool ?? 0) + ' TON';
+  const list = u.missions || [];
+  if (!list.length) {
+    $('missionsBox').innerHTML = '<small class="m">ماموریت فعالی ثبت نشده است</small>';
+    return;
+  }
+  $('missionsBox').innerHTML = list.map(m => {
+    const prog = Math.min(m.target, m.progress || 0);
+    const streakReqTxt = m.minStreak > 0 ? ` • حداقل برد متوالی: <b class="num-pink">${m.minStreak}</b>` : '';
+    let btnHtml = '';
+    if (m.claimed) {
+      btnHtml = `<button class="ghost" disabled>دریافت شد ✅</button>`;
+    } else if (m.claimable) {
+      btnHtml = `<button class="g" onclick="claimMission('${m.id}')">دریافت <span class="num-pink">${fmt(m.reward)}</span> TON</button>`;
+    } else {
+      btnHtml = `<button class="ghost" disabled><span class="num-pink">${prog}/${m.target}</span></button>`;
+    }
+    return `<div class="mission-row">
+      <div>
+        <div><b>${m.title}</b></div>
+        <small class="m">پیشرفت: <b class="num-cyan">${prog}/${m.target}</b>${streakReqTxt} • جایزه: <b class="num-pink">${fmt(m.reward)} TON</b></small>
+      </div>
+      ${btnHtml}
+    </div>`;
+  }).join('');
+}
 
-/* ---------- admin ---------- */
-async function loadAdmin(){const d=await api('admin/users');const s=d.settings;$('smin').value=s.minMult;$('smax').value=s.maxMult;$('sedge').value=s.edge;$('sstart').value=s.startCoins;$('aq').value=s.queue.join(' ');
-  AU=d.users;filterUsers()}
-async function adminCoins(){const r=await api('admin/coins',{id:$('aid').value,amount:$('aamt').value,note:$('anote').value});toast(`انجام شد: ${r.name} ← ${r.coins}`);loadAdmin()}
-async function adminHist(){const d=await api('admin/history?q='+encodeURIComponent($('aid').value));$('ltitle').textContent='📜 '+d.user.name+' • موجودی '+fmt(d.user.coins);$('lbody').innerHTML=ledgerHtml(d.tx);openScr('ledger')}
-async function adminBan(b){await api('admin/ban',{id:$('aid').value,banned:b});toast('انجام شد');loadAdmin()}
-async function adminQueue(){await api('admin/queue',{queue:$('aq').value.split(/[\s,]+/).filter(Boolean)});toast('صف ذخیره شد')}
-async function adminSettings(){await api('admin/settings',{minMult:$('smin').value,maxMult:$('smax').value,edge:$('sedge').value,startCoins:$('sstart').value});toast('ذخیره شد')}
-let AU=[];function filterUsers(){const q=$('asr').value.trim().toLowerCase().replace(/^@/,'');const L=AU.filter(u=>!q||(u.name+' '+u.username+' '+u.id).toLowerCase().includes(q));$('acnt').textContent='('+AU.length+' نفر)';
-  $('ausers').innerHTML=L.slice(0,100).map(u=>`<div class="pl" onclick="$('aid').value='${u.id}';scrollTo(0,0)"><span>${esc(u.name)} <small class="mut">${u.username?'@'+esc(u.username)+' ':''}${u.id}</small></span><span>🪙${u.coins}${u.banned?' 🚫':''}</span></div>`).join('')}
-async function adminDm(){const r=await api('admin/dm',{id:$('aid').value,text:$('adm').value});toast(r.ok?'ارسال شد':'ارسال نشد (کاربر بات را استارت نکرده)')}
-async function adminBc(){const r=await api('admin/broadcast',{text:$('abc').value});toast('ارسال شد: '+r.sent)}
+async function claimMission(missionId) {
+  try {
+    const r = await api('mission/claim', { mission: missionId });
+    beep(860, 0.14);
+    toast(`🎁 ${fmt(r.reward)} TON پاداش ماموریت دریافت شد!`);
+    poll();
+  } catch {}
+}
 
-async function poll(){try{const d=await api('state');st=d;syncT=Date.now();setUser(d.user);renderCrash();if(scr==='arena'||!poll.a){renderArena();poll.a=1}}catch{}}
-api('me').then(d=>{$('botun').textContent='@'+(d.botUsername||'—')});
-poll();setInterval(poll,400);setInterval(()=>{if(st&&scr==='arena')renderArena()},250);
+function setUser(u) {
+  me = u;
+  if (u.botUsername) {
+    botUsername = cleanBotName(u.botUsername);
+    $('botun').textContent = '@' + botUsername;
+  }
+  if (u.tonDeposit) {
+    $('tonAddrDisp').textContent = u.tonDeposit.address;
+    $('tonMemoDisp').textContent = u.tonDeposit.memo;
+  }
+  $('nm').textContent = $('nm2').textContent = u.name;
+  const av = u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎');
+  $('av').innerHTML = $('av2').innerHTML = av;
+  $('lv').textContent = $('lv2').textContent = 'سطح ' + u.level + (u.username ? ` • @${u.username}` : '');
+  $('coins').textContent = $('w2').textContent = fmt(u.coins);
+  $('refCnt').textContent = u.refCount || 0;
+  $('refEarn').textContent = fmt(u.refEarned || 0) + ' TON';
+  updateRefLink();
+  renderMissionsAndStreak(u);
+  const T = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300, 1e9];
+  const lo = T[u.level - 1] || 0, hi = T[u.level];
+  $('xp').style.width = Math.min(100, (u.xp - lo) / (hi - lo) * 100) + '%';
+  $('stats').innerHTML = [
+    ['بازی‌ها', u.games, 'num-pink'],
+    ['برد', u.wins, 'num-cyan'],
+    ['بیشترین ضریب', u.bestMult + 'x', 'num-gold'],
+    ['رکورد برد متوالی', u.bestStreak || 0, 'num-mint'],
+    ['در گردش', fmt(u.wagered) + ' TON', 'num-lav'],
+    ['مجموع برد', fmt(u.won) + ' TON', 'num-pink']
+  ].map(a => `<div><b class="${a[2]}">${a[1]}</b><small>${a[0]}</small></div>`).join('');
+  if (u.isAdmin) $('admtab').style.display = '';
+  $('wbtn').disabled = u.wheelIn > 0;
+  $('wbtn').textContent = u.wheelIn > 0 ? 'بعدی: ' + ms2t(u.wheelIn) : 'بچرخان';
+  $('tbtn').disabled = u.tagIn > 0;
+  if (u.tagIn > 0) $('tbtn').textContent = 'بعدی: ' + ms2t(u.tagIn);
+}
+
+const cv = $('cv'), cx = cv.getContext('2d'); let syncT = 0;
+function qSlot(slot, f) {
+  const id = slot === 'a' ? 'amtA' : 'amtB';
+  const cur = Number($(id).value || 0.01);
+  const next = Math.min(50, Math.max(0.01, Math.round(cur * f * 1000) / 1000));
+  $(id).value = next;
+}
+function qaSlot(slot) {
+  const id = slot === 'a' ? 'amtA' : 'amtB';
+  const val = Math.min(50, Math.max(0.01, Number((me ? me.coins : 0.01).toFixed(4))));
+  $(id).value = val;
+}
+async function slotAct(slot) {
+  const c = st.crash;
+  const sObj = c.my && c.my[slot];
+  const amt = Number($(slot === 'a' ? 'amtA' : 'amtB').value);
+  const auto = $(slot === 'a' ? 'autoA' : 'autoB').value;
+  const shield = $(slot === 'a' ? 'shA' : 'shB').checked;
+  if (c.phase === 'bet' && !sObj && (!(amt >= 0.01 && amt <= 50))) {
+    return toast('مبلغ شرط باید بین 0.01 تا 50 TON باشد');
+  }
+  try {
+    if (c.phase === 'bet' && !sObj) {
+      await api('crash/bet', { slot, amount: amt, auto, shield });
+      beep(620, 0.08);
+    } else if (c.phase === 'run' && sObj && !sObj.cashed && !sObj.lost) {
+      const r = await api('crash/cashout', { slot });
+      beep(880, 0.14, 'triangle', 0.12);
+      toast(`✅ برداشت ${slot === 'a' ? 'شرط ۱' : 'شرط ۲'} در ` + r.mult + 'x');
+    }
+  } catch {}
+  poll();
+}
+function curMult() {
+  const c = st.crash;
+  if (c.phase === 'run') return Math.exp(c.growth * (c.runningMs + (Date.now() - syncT)) / 1000);
+  return c.phase === 'crashed' ? c.crashAt : 1;
+}
+function renderLiveTop3() {
+  const top3 = (st && st.crash && Array.isArray(st.crash.top3)) ? st.crash.top3 : [];
+  if (!top3.length) {
+    $('liveTop3').innerHTML = `<div class="top3-row"><span style="color:var(--mut)">۳ برد برتر این دور: <b class="num-pink">در انتظار برداشت...</b></span></div>`;
+    return;
+  }
+  const medals = ['🥇', '🥈', '🥉'];
+  const amtCls = ['top3-c1', 'top3-c2', 'top3-c3'];
+  $('liveTop3').innerHTML = top3.slice(0, 3).map((item, i) =>
+    `<div class="top3-row"><span>${medals[i]}</span><span class="top3-name">${item.name}</span><b class="${amtCls[i]}">+${fmt(item.wonAmount)} TON</b><small class="num-pink">(${item.mult}x)</small></div>`
+  ).join('');
+}
+function updateSlotUI(slot, m) {
+  const c = st.crash;
+  const sObj = c.my && c.my[slot];
+  const btn = $(slot === 'a' ? 'btnA' : 'btnB');
+  const stEl = $(slot === 'a' ? 'stA' : 'stB');
+  const labelNum = slot === 'a' ? '۱' : '۲';
+
+  if (sObj) {
+    stEl.innerHTML = `شرط: <b class="num-pink">${fmt(sObj.amount)} TON</b>${sObj.shield ? ' • <b class="num-cyan">سپر فعال</b>' : ''}`;
+  } else {
+    stEl.textContent = '';
+  }
+
+  if (c.phase === 'bet') {
+    btn.innerHTML = sObj ? `ثبت شد (<span class="num-pink">${fmt(sObj.amount)}</span> TON)` : `ثبت شرط ${labelNum}`;
+    btn.disabled = !!sObj;
+    btn.className = '';
+  } else if (c.phase === 'run' && sObj && !sObj.cashed && !sObj.lost) {
+    btn.innerHTML = `برداشت ${labelNum}: <span class="num-pink">${fmt(sObj.amount * m)}</span> TON`;
+    btn.disabled = false;
+    btn.className = 'g';
+  } else {
+    if (sObj && sObj.cashed) btn.innerHTML = `برد <span class="num-pink">${sObj.cashed}x</span> ✅`;
+    else if (sObj && sObj.lost) btn.textContent = 'منفجر شد 💥';
+    else btn.textContent = 'منتظر دور بعد';
+    btn.disabled = true;
+    btn.className = '';
+  }
+}
+
+function draw() {
+  requestAnimationFrame(draw);
+  if (!st || tab !== 'crash') return;
+  const c = st.crash, W = cv.width = cv.clientWidth * 2, H = cv.height = cv.clientHeight * 2;
+  cx.clearRect(0, 0, W, H);
+  const m = curMult(), el = $('mult'), sub = $('sub'), stage = $('stage');
+
+  if (prevCrashPhase !== c.phase) {
+    if (c.phase === 'run') beep(540, 0.12, 'sine', 0.08);
+    if (c.phase === 'crashed') {
+      beep(150, 0.25, 'sawtooth', 0.12);
+      stage.classList.add('shake');
+      setTimeout(() => stage.classList.remove('shake'), 380);
+    }
+    prevCrashPhase = c.phase;
+  }
+
+  el.className = '';
+  if (c.phase === 'bet') {
+    const left = Math.max(0, Math.ceil((c.betLeft - (Date.now() - syncT)) / 1000));
+    el.textContent = left + 's';
+    el.classList.add('m-plain');
+    sub.textContent = 'در حال ثبت شرط...';
+  } else if (c.phase === 'run') {
+    el.textContent = m.toFixed(2) + 'x';
+    el.classList.add(multClass(m));
+    sub.textContent = 'در حال اوج‌گیری...';
+  } else {
+    el.textContent = '💥 ' + c.crashAt.toFixed(2) + 'x';
+    el.classList.add('m-plain');
+    sub.textContent = 'منفجر شد';
+  }
+
+  renderLiveTop3();
+
+  const prog = c.phase === 'bet' ? 0 : Math.min(1, Math.log(Math.max(1.0001, m)) / Math.log(8));
+  const px = 44 + prog * (W - 124), py = H - 44 - prog * (H - 124) * 0.85;
+  cx.strokeStyle = '#ff9ec7'; cx.lineWidth = 5;
+  cx.beginPath(); cx.moveTo(44, H - 44); cx.quadraticCurveTo(44 + (px - 44) * .6, H - 44, px, py); cx.stroke();
+
+  if (c.phase !== 'crashed') {
+    cx.font = '50px serif'; cx.save(); cx.translate(px, py); cx.rotate(-0.7); cx.fillText('🚀', -20, 20); cx.restore();
+  } else {
+    cx.font = '62px serif'; cx.fillText('💥', px - 30, py + 22);
+  }
+
+  updateSlotUI('a', m);
+  updateSlotUI('b', m);
+}
+draw();
+
+function renderCrash() {
+  const c = st.crash;
+  const histHtml = c.history.map(h => `<span class="${multClass(h)}">${h.toFixed(2)}x</span>`).join('');
+  $('hist').innerHTML = histHtml;
+  $('ghist').innerHTML = histHtml || '<small class="m">هنوز ضریبی ثبت نشده</small>';
+  $('plist').innerHTML = c.players.map((p, i) => {
+    const winPart = p.cashed
+      ? ` <b class="num-pink">${p.cashed}x • +${fmt(p.wonAmount ?? (p.amount * p.cashed))} TON</b>`
+      : '';
+    return `<div class="pl"><span>${p.name}</span><span>شرط: 💎 <b class="${numColorClass(i)}">${fmt(p.amount)}</b> TON${winPart}</span></div>`;
+  }).join('') || '<small class="m">هنوز کسی شرط نبسته</small>';
+}
+
+function qArenaAmt(factor) {
+  const inp = $('arenaAmtInp');
+  const cur = Number(inp ? inp.value : arenaDraftAmt) || 0.1;
+  const next = Math.min(50, Math.max(0.01, Math.round(cur * factor * 1000) / 1000));
+  arenaDraftAmt = String(next);
+  if (inp) inp.value = arenaDraftAmt;
+}
+function qaArenaAmt() {
+  const val = Math.min(50, Math.max(0.01, Number((me ? me.coins : 0.01).toFixed(4))));
+  arenaDraftAmt = String(val);
+  const inp = $('arenaAmtInp');
+  if (inp) inp.value = arenaDraftAmt;
+}
+function setArenaPreset(v) {
+  arenaDraftAmt = String(v);
+  const inp = $('arenaAmtInp');
+  if (inp) inp.value = arenaDraftAmt;
+}
+
+function renderArena(forceInputSync = false) {
+  if (!st || !st.arena) return;
+  const a = st.arena;
+  const players = a.players || [];
+  const totalBank = Number(a.pool ?? players.reduce((s, p) => s + Number(p.amount || 0), 0));
+  const prize = totalBank * 0.95;
+
+  if (a.last && a.last.at > lastArenaWinnerAt) {
+    lastArenaWinnerAt = a.last.at;
+    $('wWinnerName').textContent = a.last.winner;
+    $('wWinnerPrize').textContent = `+${fmt(a.last.prize)} TON جایزه`;
+    $('winnerModal').classList.add('show');
+    beep(920, 0.2, 'triangle', 0.12);
+  }
+
+  const cdSec = a.left != null ? Math.max(0, Math.ceil(a.left / 1000)) : null;
+  const statusBadge = cdSec !== null
+    ? `<span class="arena-timer-badge">⏳ پایان دور آرنا در <b class="num-pink">${cdSec}</b> ثانیه</span>`
+    : `<span class="arena-timer-badge">⚡ حداقل <b class="num-pink">2</b> بازیکن برای شروع شمارش معکوس</span>`;
+
+  const existingInp = $('arenaAmtInp');
+  const preserveVal = (!forceInputSync && existingInp && document.activeElement === existingInp)
+    ? existingInp.value
+    : arenaDraftAmt;
+
+  $('arenaStage').innerHTML = `
+    <div class="arena-hero">
+      <div style="font-size:12px;color:var(--mut)">استخر آزاد آرنا (بدون میز)</div>
+      <div class="arena-pool-val" dir="ltr">💎 <span class="num-pink">${fmt(totalBank)}</span> <span class="num-cyan">TON</span></div>
+      <small class="m">سهم برنده (<b class="num-pink">95%</b>): <b class="num-mint">${fmt(prize)} TON</b> • شانس برد متناسب با مبلغ ورود</small>
+      <div>${statusBadge}</div>
+    </div>
+
+    <div class="card">
+      <h3>🎯 ورود با مبلغ دلخواه (<b class="num-pink">0.01</b> تا <b class="num-pink">50</b> TON)</h3>
+      <input id="arenaAmtInp" type="number" step="0.01" min="0.01" max="50" value="${preserveVal}" placeholder="مبلغ TON مورد نظر را وارد کنید" oninput="arenaDraftAmt=this.value">
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.05)"><span class="num-pink">0.05</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.1)"><span class="num-cyan">0.1</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(0.5)"><span class="num-gold">0.5</span></button>
+        <button class="ghost" style="padding:7px" onclick="setArenaPreset(1)"><span class="num-mint">1</span></button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" style="padding:7px" onclick="qArenaAmt(0.5)">½</button>
+        <button class="ghost" style="padding:7px" onclick="qArenaAmt(2)">2×</button>
+        <button class="ghost" style="padding:7px" onclick="qaArenaAmt()">همه</button>
+      </div>
+      <button class="g" style="width:100%;font-size:15px;margin-top:10px" ${a.joined ? 'disabled' : ''} onclick="joinArenaCustom()">
+        ${a.joined ? 'وارد این دور آرنا شده‌اید ✅' : '🚀 ورود به آرنا'}
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>شرکت‌کنندگان این دور (<span class="num-pink">${players.length}</span>)</h3>
+      ${players.map((p, i) => {
+        const chance = totalBank > 0 ? ((Number(p.amount || 0) / totalBank) * 100).toFixed(1) : '0';
+        return `<div class="pl">
+          <span><b class="${numColorClass(i)}">${i + 1}.</b> ${p.name}</span>
+          <span>شانس: <b class="num-cyan">${chance}%</b> • 💎 <b class="num-pink">${fmt(p.amount)}</b> TON</span>
+        </div>`;
+      }).join('') || '<small class="m">هنوز بازیکنی وارد این دور نشده است</small>'}
+    </div>
+  `;
+}
+
+async function joinArenaCustom() {
+  const inp = $('arenaAmtInp');
+  const amt = Number(inp ? inp.value : arenaDraftAmt);
+  if (!isFinite(amt) || amt < 0.01 || amt > 50) {
+    return toast('مبلغ ورود به آرنا باید بین 0.01 تا 50 TON باشد');
+  }
+  try {
+    await api('arena/join', { amount: amt });
+    beep(660, 0.1);
+    toast(`✅ با ${fmt(amt)} TON وارد آرنا شدید`);
+    poll();
+  } catch {}
+}
+
+const SEG = [0.01, 0.02, 0.01, 0.1, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02, 0.01, 0.02];
+let rot = 0;
+function drawWheel() {
+  const c = $('wheel'), x = c.getContext('2d'), n = SEG.length, a = 2 * Math.PI / n;
+  x.clearRect(0, 0, 440, 440);
+  SEG.forEach((v, i) => {
+    x.beginPath(); x.moveTo(220, 220); x.arc(220, 220, 214, i * a, (i + 1) * a);
+    x.fillStyle = v === 0.1 ? '#ffc94d' : (v === 0.02 ? '#ff9ec7' : '#35e0ff');
+    x.fill();
+    x.strokeStyle = '#090d26'; x.lineWidth = 3; x.stroke();
+    x.save(); x.translate(220, 220); x.rotate(i * a + a / 2);
+    x.fillStyle = '#090d26'; x.font = 'bold 24px sans-serif'; x.textAlign = 'right';
+    x.fillText(String(v), 192, 9); x.restore();
+  });
+}
+drawWheel();
+async function spin() {
+  try {
+    const r = await api('wheel', {});
+    const n = SEG.length, a = 360 / n, idx = [];
+    SEG.forEach((v, i) => v === r.prize && idx.push(i));
+    const i = idx[Math.floor(Math.random() * idx.length)];
+    rot += 360 * 5 + ((270 - (i * a + a / 2)) - (rot % 360) + 360) % 360;
+    $('wheel').style.transform = `rotate(${rot}deg)`;
+    $('wbtn').disabled = true;
+    setTimeout(() => { beep(840, 0.16); toast('🎉 ' + fmt(r.prize) + ' TON برنده شدی!'); poll(); }, 4100);
+  } catch {}
+}
+async function tag() {
+  try { const r = await api('tag', {}); toast(`🎁 ${fmt(r.prize)} TON دریافت شد`); poll(); } catch {}
+}
+
+$('wdAmt').addEventListener('input', () => {
+  const v = Number($('wdAmt').value || 0);
+  const tax = v >= 0.2 ? fmt(v * 0.1) : '0';
+  const net = v >= 0.2 ? fmt(v * 0.9) : '0';
+  $('wdCalc').innerHTML = `مالیات <span class="num-pink">10%</span>: <span class="num-pink">${tax}</span> TON • دریافتی خالص: <span class="num-pink">${net}</span> TON`;
+});
+async function requestWithdraw() {
+  const amount = Number($('wdAmt').value || 0);
+  const tonAddress = String($('wdTon').value || '').trim();
+  if (!isFinite(amount) || amount < 0.2) return toast('حداقل برداشت 0.2 TON است');
+  try {
+    await api('withdraw', { amount, tonAddress });
+    $('wdAmt').value = '';
+    $('wdTon').value = '';
+    $('wdCalc').innerHTML = `مالیات <span class="num-pink">10%</span>: <span class="num-pink">0</span> TON • دریافتی خالص: <span class="num-pink">0</span> TON`;
+    toast('درخواست برداشت TON ثبت شد (در انتظار تایید ادمین)');
+    poll();
+  } catch {}
+}
+
+function meHistTab(mode, btn) {
+  meHistMode = mode;
+  document.querySelectorAll('#p-me .sub button').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  renderMeHist();
+}
+function renderMeHist() {
+  if (!me) return;
+  if (meHistMode === 'tx') {
+    const list = me.txs || [];
+    $('meHistBox').innerHTML = list.map((t, i) => {
+      const cls = t.amount >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
+      const stBadge = t.status === 'pending' ? ' <span class="pill-wait">(در انتظار تایید)</span>' : '';
+      return `<div class="pl">
+        <div><div>${t.note}${stBadge}</div><small class="m">${fmtTime(t.at)}</small></div>
+        <b class="${cls}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)} TON</b>
+      </div>`;
+    }).join('') || '<small class="m">تراکنشی ثبت نشده است</small>';
+  } else {
+    const list = me.gameLogs || [];
+    $('meHistBox').innerHTML = list.map((g, i) => {
+      const cls = g.delta >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
+      return `<div class="pl">
+        <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
+        <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
+      </div>`;
+    }).join('') || '<small class="m">سابقه بازی ثبت نشده است</small>';
+  }
+}
+
+async function lbTab(k, b) {
+  document.querySelectorAll('#p-lb .sub button').forEach(x => x.classList.remove('on'));
+  if (b) b.classList.add('on');
+  const d = await api('leaderboard');
+  $('lbbox').innerHTML = d[k].map((u, i) =>
+    `<div class="lb"><span class="rk">${i < 3 ? ['🥇', '🥈', '🥉'][i] : `<span class="${numColorClass(i)}">${i + 1}</span>`}</span><div class="av" style="width:30px;height:30px;font-size:13px">${u.photo ? `<img src="${u.photo}">` : (u.name[0] || '💎')}</div><span class="grow nm">${u.name} <small class="m">Lv<span class="${numColorClass(i + 1)}">${u.level}</span></small></span><b class="${numColorClass(i)}">${fmt(u.value)} TON</b></div>`
+  ).join('') || '<small class="m">هنوز داده‌ای نیست</small>';
+}
+
+let adminCache = null, selectedAdminUserId = '', adminTxFilter = 'all';
+
+function renderAdminPlayersList() {
+  if (!adminCache) return;
+  const q = String(($('admPlayerSearch') && $('admPlayerSearch').value) || '').trim().replace(/^@/, '').toLowerCase();
+  const list = (adminCache.users || []).filter(u => {
+    if (!q) return true;
+    const idMatch = String(u.id || '').toLowerCase().includes(q);
+    const unMatch = String(u.username || '').toLowerCase().includes(q);
+    const nmMatch = String(u.name || '').toLowerCase().includes(q);
+    return idMatch || unMatch || nmMatch;
+  });
+
+  if (!list.length) {
+    $('ausers').innerHTML = '<small class="m">بازیکنی با این مشخصات پیدا نشد</small>';
+    return;
+  }
+
+  $('ausers').innerHTML = list.map((u, i) => {
+    const hasFlag = !!(u.audit && u.audit.flags && u.audit.flags.length);
+    const isSel = selectedAdminUserId === u.id;
+    return `<div class="pl" style="cursor:pointer;${isSel ? 'background:rgba(53,224,255,.12);border-radius:10px' : ''}" onclick="showAdminUser('${u.id}')">
+      <div>
+        <div>${hasFlag ? '⚠️ ' : ''}<b>${u.name}</b> ${u.banned ? '🚫' : ''}</div>
+        <small class="m">آیدی: <b class="num-cyan">${u.id}</b>${u.username ? ` • @${u.username}` : ''} • گردش: <b class="${numColorClass(i)}">${fmt(u.wagered || 0)} TON</b></small>
+      </div>
+      <span>💎 <b class="num-pink">${fmt(u.coins)} TON</b></span>
+    </div>`;
+  }).join('');
+}
+
+async function loadAdmin() {
+  const d = await api('admin/users');
+  adminCache = d;
+  $('admTotalPlayers').textContent = (d.users || []).length;
+  const s = d.settings;
+  $('smin').value = s.minMult; $('smax').value = s.maxMult;
+  $('sedge').value = s.edge; $('sgreed').value = s.greed ?? 0.42;
+  $('spool').value = d.promoPool ?? 0;
+  $('admBonusPool').textContent = fmt(d.promoPool ?? 0) + ' TON';
+  $('aq').value = s.queue.join(' ');
+  if (d.tonDeposit) {
+    $('admTonAddr').value = d.tonDeposit.address || '';
+    $('admTonMemo').value = d.tonDeposit.memo || '';
+  }
+
+  $('amissionsList').innerHTML = (d.missionsConfig || []).map((m, i) => `
+    <div class="mission-row">
+      <div>
+        <div><b>${m.title}</b> ${m.enabled === false ? '<span class="pill-bad">(غیرفعال)</span>' : '<span class="pill-ok">(فعال)</span>'}</div>
+        <small class="m">نوع: ${m.type} • هدف: <b class="${numColorClass(i)}">${m.target}</b> • جایزه: <b class="num-pink">${fmt(m.reward)} TON</b>${m.minStreak ? ` • برد متوالی: <b class="num-pink">${m.minStreak}</b>` : ''}</small>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="ghost" style="padding:6px 9px;font-size:11px" onclick="adminToggleMission('${m.id}')">${m.enabled === false ? 'فعال' : 'توقف'}</button>
+        <button class="r" style="padding:6px 9px;font-size:11px" onclick="adminRemoveMission('${m.id}')">حذف</button>
+      </div>
+    </div>
+  `).join('') || '<small class="m">ماموریتی وجود ندارد</small>';
+
+  const deps = d.deposits || [];
+  $('adeposits').innerHTML = deps.map((dep, i) => `
+    <div class="pl" style="cursor:pointer" onclick="showAdminUser('${dep.uid}')">
+      <div>
+        <div><b>${dep.name || dep.uid}</b> ${dep.username ? `<small class="m">@${dep.username}</small>` : ''}</div>
+        <small class="m">آیدی واریزکننده: <b class="num-cyan">${dep.uid}</b> • ${fmtTime(dep.at)}${dep.txHash ? ` • TX: <span>${String(dep.txHash).slice(0, 10)}...</span>` : ''}</small>
+      </div>
+      <span>💎 <b class="${numColorClass(i)}">+${fmt(dep.amount)} TON</b></span>
+    </div>
+  `).join('') || '<small class="m">هنوز واریزی ثبت نشده است</small>';
+
+  const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
+  $('awithdrawals').innerHTML = pending.map(w => {
+    const reasons = (w.riskReasons && w.riskReasons.length) ? w.riskReasons : [];
+    const riskHtml = w.suspicious
+      ? `<div class="fraud-box"><div class="pill-bad">⚠️ هشدار برداشت مشکوک:</div>${reasons.map(r => `<div>• ${r}</div>`).join('')}</div>`
+      : `<div style="font-size:11px;color:var(--ok)">✅ بررسی خودکار: مشکوک نیست</div>`;
+    return `<div class="pl" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div><b>${w.name}</b> (${w.username ? '@' + w.username + ' • ' : ''}<span class="num-cyan">${w.uid}</span>)</div>
+      <div style="font-size:12px">درخواستی: <b class="num-pink">${fmt(w.gross)} TON</b> | مالیات <b class="num-pink">10%</b>: <b class="num-gold">${fmt(w.tax)} TON</b> | خالص: <b class="num-pink">${fmt(w.net)} TON</b></div>
+      <div style="font-size:12px;color:var(--mut);direction:ltr;text-align:right">TON: <b>${w.tonAddress ? w.tonAddress : 'وارد نشده'}</b></div>
+      ${riskHtml}
+      <input id="wdMsg_${w.id}" type="text" placeholder="پیام اختیاری برای کاربر (خالی بماند ارسال نمی‌شود)">
+      <div class="row">
+        <button class="g" style="padding:7px" onclick="decideWd('${w.id}','approve')">تایید برداشت TON</button>
+        <button class="r" style="padding:7px" onclick="decideWd('${w.id}','reject')">رد و برگشت TON</button>
+      </div>
+    </div>`;
+  }).join('') || '<small class="m">درخواست برداشت در انتظار تایید وجود ندارد</small>';
+
+  renderAdminPlayersList();
+
+  if (selectedAdminUserId) showAdminUser(selectedAdminUserId);
+}
+
+function setAdminTxFilter(filter, uid) {
+  adminTxFilter = filter;
+  showAdminUser(uid);
+}
+
+async function adminSendUserDm(uid) {
+  const inp = $('admUserDmInp_' + uid);
+  const text = String((inp && inp.value) || '').trim();
+  if (!text) return toast('متن پیام را وارد کنید');
+  try {
+    await api('admin/dm', { id: uid, text });
+    if (inp) inp.value = '';
+    toast('✅ پیام مستقیم در تلگرام ارسال شد');
+    loadAdmin();
+  } catch {}
+}
+
+async function adminAdjustSelectedUser(uid, sign) {
+  const inp = $('admUserAmtInp_' + uid);
+  const raw = Math.abs(Number((inp && inp.value) || 0));
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
+  const amount = sign * raw;
+  try {
+    await api('admin/coins', { id: uid, amount });
+    if (inp) inp.value = '';
+    toast(amount >= 0 ? `✅ +${fmt(amount)} TON اضافه شد` : `✅ ${fmt(amount)} TON کم شد`);
+    loadAdmin();
+    poll();
+  } catch {}
+}
+
+function showAdminUser(uid) {
+  if (!adminCache) return;
+  selectedAdminUserId = uid;
+  renderAdminPlayersList();
+  const u = adminCache.users.find(x => x.id === uid);
+  if (!u) return;
+  $('aid').value = u.id;
+  const a = u.audit || {};
+  const flagsHtml = (a.flags && a.flags.length)
+    ? `<div class="fraud-box"><div class="pill-bad">⚠️ مغایرت / هشدار حسابرسی:</div>${a.flags.map(f => `<div>• ${f}</div>`).join('')}</div>`
+    : `<div style="font-size:12px;color:var(--ok);margin:6px 0">✅ تراز حساب مطابقت دارد</div>`;
+
+  const allTxs = u.txs || [];
+  const filteredTxs = allTxs.filter(t => {
+    const amt = Number(t.amount || 0);
+    if (adminTxFilter === 'all') return true;
+    if (adminTxFilter === 'in') return amt > 0;
+    if (adminTxFilter === 'out') return amt < 0;
+    if (adminTxFilter === 'admin') return ['admin_coins', 'admin_bulk', 'tg_admin_coins', 'admin_dm'].includes(t.source);
+    return true;
+  });
+
+  const txsHtml = filteredTxs.slice(0, 60).map((t, i) => {
+    const amt = Number(t.amount || 0);
+    const isAdd = amt > 0;
+    const isSub = amt < 0;
+    const cls = isAdd ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : (isSub ? 'pill-bad' : 'num-cyan');
+    const dirLabel = isAdd
+      ? `<span class="pill-ok">➕ اضافه شد: +${fmt(amt)} TON</span>`
+      : (isSub
+        ? `<span class="pill-bad">➖ کم شد: -${fmt(Math.abs(amt))} TON</span>`
+        : `<span class="num-cyan">💬 ثبت پیام/رویداد</span>`);
+    const balStep = (t.before !== undefined && t.after !== undefined)
+      ? `<small class="m">موجودی قبل: <b class="num-cyan">${fmt(t.before)}</b> → موجودی بعد: <b class="num-pink">${fmt(t.after)}</b> • ${fmtTime(t.at)}${t.ip ? ' • IP: ' + t.ip : ''}</small>`
+      : `<small class="m">${fmtTime(t.at)}</small>`;
+    return `<div class="pl">
+      <div><div><b>${t.note}</b></div><div>${dirLabel}</div>${balStep}</div>
+      <b class="${cls}">${amt > 0 ? '+' : (amt < 0 ? '-' : '')}${fmt(Math.abs(amt))} TON</b>
+    </div>`;
+  }).join('') || '<small class="m">تراکنشی در این فیلتر یافت نشد</small>';
+
+  const glsHtml = (u.gameLogs || []).slice(0, 30).map((g, i) => {
+    const cls = g.delta >= 0 ? (i % 2 === 0 ? 'num-pink' : 'pill-ok') : 'pill-bad';
+    return `<div class="pl">
+      <div><div><b>${g.game.toUpperCase()}</b> — ${g.detail}</div><small class="m">${fmtTime(g.at)}</small></div>
+      <b class="${cls}">${g.delta >= 0 ? '+' : ''}${fmt(g.delta)} TON</b>
+    </div>`;
+  }).join('') || '<small class="m">بدون بازی</small>';
+
+  $('auserDetail').innerHTML = `<div class="card" style="background:rgba(12,18,48,.78);margin-bottom:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+      <h3 style="margin:0">${u.name} (<span class="num-cyan">${u.id}</span>)</h3>
+      <button class="ghost" style="padding:5px 9px;font-size:11px" onclick="copyText('${u.id}','آیدی کپی شد')">کپی آیدی</button>
+    </div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:8px">
+      ${u.username ? `یوزرنیم: <b class="num-lav">@${u.username}</b> • ` : ''}
+      موجودی فعلی: <b class="num-pink">${fmt(u.coins)} TON</b> • رفرال: <b class="num-gold">${u.refCount || 0}</b> • IP: <b>${u.lastIp || '—'}</b>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">💬 ارسال پیام مستقیم به این بازیکن در تلگرام</div>
+      <div class="row">
+        <input id="admUserDmInp_${u.id}" type="text" placeholder="متن پیام برای ${u.name}...">
+        <button class="ton" style="padding:8px 12px;flex:0 0 auto" onclick="adminSendUserDm('${u.id}')">ارسال</button>
+      </div>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">💰 اضافه یا کم کردن موجودی TON این بازیکن</div>
+      <input id="admUserAmtInp_${u.id}" type="number" step="0.01" placeholder="مقدار TON (مثلاً 0.5)" style="margin-bottom:6px">
+      <div class="row">
+        <button class="g" style="padding:7px" onclick="adminAdjustSelectedUser('${u.id}',1)">+ اضافه کن</button>
+        <button class="r" style="padding:7px" onclick="adminAdjustSelectedUser('${u.id}',-1)">- کم کن</button>
+        <button class="${u.banned ? 'g' : 'r'}" style="padding:7px" onclick="$('aid').value='${u.id}';adminBan(${!u.banned})">${u.banned ? 'آزادسازی' : 'بن کردن'}</button>
+      </div>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700">🤝 زیرمجموعه‌های این کاربر (<span class="num-pink">${(u.referrals || []).length}</span>)</div>
+        <small class="m">درآمد رفرال: <b class="num-gold">${fmt(u.refEarned || 0)} TON</b></small>
+      </div>
+      ${(u.referrals && u.referrals.length)
+        ? u.referrals.map((r, idx) => `<div class="pl" style="cursor:pointer" onclick="showAdminUser('${r.id}')">
+            <div>
+              <div><b class="${numColorClass(idx)}">${idx + 1}.</b> <b>${r.name}</b> ${r.banned ? '🚫' : ''}</div>
+              <small class="m">آیدی: <b class="num-cyan">${r.id}</b>${r.username ? ` • @${r.username}` : ''} • گردش: <b class="num-lav">${fmt(r.wagered || 0)} TON</b></small>
+            </div>
+            <span>💎 <b class="num-pink">${fmt(r.coins || 0)} TON</b></span>
+          </div>`).join('')
+        : '<small class="m">این کاربر هنوز زیرمجموعه‌ای ندارد</small>'}
+    </div>
+
+    ${flagsHtml}
+    <div class="audit-grid">
+      <div>واریز TON: <b class="num-pink">${fmt(a.tonDeposits)}</b></div>
+      <div>تغییر ادمین: <b class="num-cyan">${fmt(a.adminAdjustments)}</b></div>
+      <div>بونوس/ماموریت/گردونه: <b class="num-gold">${fmt(a.promoRewards)}</b></div>
+      <div>رفرال: <b class="num-mint">${fmt(a.referralRewards)}</b></div>
+      <div>گردش شرط‌ها: <b class="num-lav">${fmt(a.wagered)}</b></div>
+      <div>مجموع بردها: <b class="num-pink">${fmt(a.won)}</b></div>
+      <div>برداشت ثبت‌شده: <b class="num-cyan">${fmt(a.withdrawGross)}</b></div>
+      <div>اختلاف تراز: <b class="${Math.abs(a.discrepancy || 0) > 0.001 ? 'pill-bad' : 'num-pink'}">${fmt(a.discrepancy)}</b></div>
+    </div>
+    <div class="sub" style="margin-top:10px">
+      <button class="${adminTxFilter === 'all' ? 'on' : ''}" onclick="setAdminTxFilter('all','${u.id}')">همه (${allTxs.length})</button>
+      <button class="${adminTxFilter === 'in' ? 'on' : ''}" onclick="setAdminTxFilter('in','${u.id}')">اضافه شده (+)</button>
+      <button class="${adminTxFilter === 'out' ? 'on' : ''}" onclick="setAdminTxFilter('out','${u.id}')">کم شده (-)</button>
+      <button class="${adminTxFilter === 'admin' ? 'on' : ''}" onclick="setAdminTxFilter('admin','${u.id}')">ادمین</button>
+    </div>
+    ${txsHtml}
+    <small class="m" style="display:block;margin-top:10px">سابقه بازی‌ها:</small>${glsHtml}
+  </div>`;
+}
+
+async function adminBroadcast() {
+  const text = $('broadcastText').value.trim();
+  if (!text) return toast('متن پیام همگانی را وارد کنید');
+  const btn = $('broadcastBtn');
+  btn.disabled = true;
+  btn.textContent = 'در حال ارسال...';
+  try {
+    const r = await api('admin/broadcast', { text });
+    $('broadcastText').value = '';
+    $('broadcastStatus').textContent = `✅ ارسال شد به ${r.sent} نفر از ${r.total} کاربر${r.failed ? ` (${r.failed} ناموفق)` : ''}`;
+    toast(`✅ پیام به ${r.sent} کاربر ارسال شد`);
+  } catch {}
+  btn.disabled = false;
+  btn.textContent = 'ارسال پیام به همه';
+}
+
+async function adminSaveTonConfig() {
+  const address = $('admTonAddr').value.trim();
+  const memo = $('admTonMemo').value.trim();
+  await api('admin/ton_config', { address, memo });
+  toast('✅ آدرس و ممو TON ذخیره شد');
+  loadAdmin();
+  poll();
+}
+
+async function adminBonusDelta(sign) {
+  const raw = Math.abs(Number($('admBonusDelta').value || 0));
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
+  const r = await api('admin/bonus', { delta: sign * raw });
+  $('admBonusDelta').value = '';
+  toast(`بودجه بونوس: ${fmt(r.promoPool)} TON`);
+  loadAdmin();
+  poll();
+}
+
+async function adminAddMission() {
+  const title = $('mTitle').value.trim();
+  const type = $('mType').value;
+  const target = Number($('mTarget').value || 1);
+  const reward = Number($('mReward').value || 0.01);
+  const minStreak = Number($('mMinStreak').value || 0);
+  if (!title) return toast('عنوان ماموریت را وارد کنید');
+  await api('admin/mission_add', {
+    title, type, target, reward, minStreak,
+    minStake: type === 'crash_streak_4x' ? 0.1 : 0,
+    minMult: type === 'crash_streak_4x' ? 4.0 : 0
+  });
+  $('mTitle').value = '';
+  $('mTarget').value = '';
+  $('mReward').value = '';
+  $('mMinStreak').value = '';
+  toast('✅ ماموریت جدید اضافه شد');
+  loadAdmin();
+  poll();
+}
+
+async function adminToggleMission(id) {
+  await api('admin/mission_toggle', { id });
+  toast('وضعیت ماموریت تغییر کرد');
+  loadAdmin();
+  poll();
+}
+
+async function adminRemoveMission(id) {
+  await api('admin/mission_remove', { id });
+  toast('ماموریت حذف شد');
+  loadAdmin();
+  poll();
+}
+
+async function decideWd(id, action) {
+  const noteEl = document.getElementById('wdMsg_' + id);
+  const note = noteEl ? String(noteEl.value || '').trim() : '';
+  await api('admin/withdraw', { id, action, note });
+  toast('ثبت شد');
+  loadAdmin();
+  poll();
+}
+async function adminCoins() { await api('admin/coins', { id: $('aid').value, amount: $('aamt').value }); toast('موجودی TON اعمال شد'); loadAdmin(); poll(); }
+async function adminBulkCoins(sign) {
+  const raw = Math.abs(Number($('bulkAmt').value || 0));
+  if (!raw) return toast('مقدار TON معتبر وارد کنید');
+  const amount = sign * raw;
+  const r = await api('admin/bulk_coins', { amount });
+  toast(`روی ${r.updatedCount} کاربر اعمال شد`);
+  loadAdmin();
+  poll();
+}
+async function adminBan(b) { await api('admin/ban', { id: $('aid').value, banned: b }); toast('انجام شد'); loadAdmin(); }
+async function adminQueue() { await api('admin/queue', { queue: $('aq').value.split(/[\s,]+/).filter(Boolean) }); toast('صف ذخیره شد'); }
+async function adminSettings() {
+  await api('admin/settings', {
+    minMult: $('smin').value, maxMult: $('smax').value,
+    edge: $('sedge').value, greed: $('sgreed').value,
+    startCoins: 0, promoPool: $('spool').value
+  });
+  toast('تنظیمات ذخیره شد');
+  poll();
+}
+
+async function poll() {
+  try {
+    const d = await api('state');
+    st = d; syncT = Date.now();
+    setUser(d.user);
+    renderCrash();
+    if (tab === 'arena') renderArena(false);
+    if (tab === 'me') renderMeHist();
+  } catch {}
+}
+api('me').then(d => {
+  if (d && d.user) setUser(d.user);
+  botUsername = cleanBotName(d.botUsername || (d.user && d.user.botUsername) || '');
+  $('botun').textContent = '@' + (botUsername || '—');
+  updateRefLink();
+  initTonConnect();
+}).catch(() => {});
+poll();
+setInterval(poll, 450);
 </script>
 </body>
 </html>
