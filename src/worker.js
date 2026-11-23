@@ -1,4 +1,4 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.7 + Admin Search, DM & Full Balance Ledger)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.9 + Admin Deposits Log, Referrals, Search, DM & Ledger)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
@@ -161,6 +161,7 @@ export class Game {
       crash: null,
       arena: null,
       withdrawals: [],
+      deposits: [],
       usedTonTxs: [],
       tonOrders: []
     };
@@ -174,6 +175,7 @@ export class Game {
     }
     if (typeof this.meta.promoPool !== 'number' || !isFinite(this.meta.promoPool)) this.meta.promoPool = 1.0;
     if (!Array.isArray(this.meta.withdrawals)) this.meta.withdrawals = [];
+    if (!Array.isArray(this.meta.deposits)) this.meta.deposits = [];
     if (!Array.isArray(this.meta.usedTonTxs)) this.meta.usedTonTxs = [];
     if (!Array.isArray(this.meta.tonOrders)) this.meta.tonOrders = [];
     if (!this.meta.crash) this.meta.crash = { phase: 'bet', id: 1, betEnd: Date.now() + BET_MS, startAt: 0, crashAt: 0, endAt: 0, bets: {} };
@@ -194,6 +196,30 @@ export class Game {
         }
       }
       this.meta.arena = { players: migratedPlayers, endAt: 0, last: migratedLast };
+    }
+
+    if (this.meta.deposits.length === 0) {
+      const rebuilt = [];
+      for (const ord of (this.meta.tonOrders || [])) {
+        if (ord && ord.status === 'completed') {
+          const payer = this.users[ord.uid];
+          rebuilt.push({
+            id: 'dep_' + (ord.completedAt || ord.created || Date.now()) + '_' + Math.random().toString(36).slice(2, 6),
+            uid: String(ord.uid || ''),
+            name: payer?.name || String(ord.uid || ''),
+            username: payer?.username || '',
+            amount: r4(ord.tonAmount || 0),
+            txHash: ord.txHash || '',
+            memo: ord.fullMemo || '',
+            senderAddress: ord.senderAddress || '',
+            at: ord.completedAt || ord.created || Date.now()
+          });
+        }
+      }
+      if (rebuilt.length) {
+        this.meta.deposits = rebuilt.sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 200);
+        this.saveMeta();
+      }
     }
 
     this.users = {};
@@ -1145,6 +1171,18 @@ export class Game {
 
         const creditedTon = r4(Math.max(order.tonAmount, check.tonPaid));
         this.applyBalance(u, creditedTon, 'ton_deposit', `شارژ تاییدشده با Tonkeeper (+${fmtTon(creditedTon)} TON)`);
+        this.meta.deposits.unshift({
+          id: 'dep_' + now + '_' + Math.random().toString(36).slice(2, 6),
+          uid: u.id,
+          name: u.name,
+          username: u.username || '',
+          amount: creditedTon,
+          txHash: check.txHash,
+          memo: order.fullMemo || '',
+          senderAddress: check.sender || order.senderAddress || '',
+          at: now
+        });
+        this.meta.deposits = this.meta.deposits.slice(0, 200);
         this.rewardReferrer(u, creditedTon, 0.08, 'پاداش ۸٪ واریز زیرمجموعه');
         this.touch(u);
         this.saveMeta();
@@ -1242,21 +1280,45 @@ export class Game {
         return json(200, { circulation: top('wagered'), winners: top('won'), rich: top('coins') });
       }
 
-      case 'GET /api/admin/users':
+      case 'GET /api/admin/users': {
+        const allUsersArr = Object.values(this.users);
+        const refsByInviter = {};
+        for (const candidate of allUsersArr) {
+          if (candidate.refBy) {
+            if (!refsByInviter[candidate.refBy]) refsByInviter[candidate.refBy] = [];
+            refsByInviter[candidate.refBy].push({
+              id: candidate.id,
+              name: candidate.name,
+              username: candidate.username || '',
+              coins: r4(candidate.coins || 0),
+              wagered: r4(candidate.wagered || 0),
+              won: r4(candidate.won || 0),
+              created: candidate.created || 0,
+              banned: !!candidate.banned
+            });
+          }
+        }
         return json(200, {
-          users: Object.values(this.users).sort((a, b) => b.created - a.created).slice(0, 200).map(x => ({
-            id: x.id, name: x.name, username: x.username, coins: r4(x.coins),
-            wagered: r4(x.wagered || 0), won: r4(x.won || 0),
-            refCount: x.refCount || 0, refEarned: r4(x.refEarned || 0),
-            streak: x.streak || 0, bestStreak: x.bestStreak || 0,
-            arenaEntries: x.arenaEntries || 0, highMultStreak: x.highMultStreak || 0,
-            lastIp: x.lastIp || '',
-            banned: x.banned,
-            audit: this.auditUser(x),
-            txs: (x.txs || []).slice(0, 120),
-            gameLogs: (x.gameLogs || []).slice(0, 120)
-          })),
+          users: [...allUsersArr].sort((a, b) => b.created - a.created).slice(0, 200).map(x => {
+            const subUsers = (refsByInviter[x.id] || []).sort((a, b) => (b.created || 0) - (a.created || 0));
+            return {
+              id: x.id, name: x.name, username: x.username, coins: r4(x.coins),
+              wagered: r4(x.wagered || 0), won: r4(x.won || 0),
+              refBy: x.refBy || '',
+              refCount: Math.max(Number(x.refCount || 0), subUsers.length),
+              refEarned: r4(x.refEarned || 0),
+              referrals: subUsers,
+              streak: x.streak || 0, bestStreak: x.bestStreak || 0,
+              arenaEntries: x.arenaEntries || 0, highMultStreak: x.highMultStreak || 0,
+              lastIp: x.lastIp || '',
+              banned: x.banned,
+              audit: this.auditUser(x),
+              txs: (x.txs || []).slice(0, 120),
+              gameLogs: (x.gameLogs || []).slice(0, 120)
+            };
+          }),
           withdrawals: this.meta.withdrawals.slice(0, 100),
+          deposits: this.meta.deposits.slice(0, 150),
           promoPool: r4(this.meta.promoPool || 0),
           tonDeposit: {
             address: this.meta.tonDeposit?.address || DEFAULT_TON_DEPOSIT_ADDR,

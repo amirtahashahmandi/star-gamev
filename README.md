@@ -1,6 +1,5 @@
-# Tonia Game v2.7 (Admin Players Search + Direct DM + Full Ledger + Photo Support)
+# Tonia Game v2.9 (Admin Deposits Log + Referrals per User + Search + Direct DM + Full Ledger + Photo Support)
 Cloudflare Workers + Durable Object + Telegram WebApp + Tonkeeper Direct Deposit & On-Chain Verification.
-- Admin header displays total players count clearly.
-- Admin players section includes live search by player ID, username, or name.
-- Clicking a player opens full audit & history, direct Telegram message sender to that player, quick balance actions, and ban/unban.
-- Every balance addition or deduction is recorded with before/after balance, delta, source, timestamp, and status.
+- Admin panel includes a dedicated Deposits section showing every completed TON deposit with payer ID, name, username, amount, txHash/memo, and timestamp.
+- Clicking any user in the Admin panel displays that user's referred sub-users (referrals) list.
+- Admin header displays total players count clearly, with live search, direct Telegram DM, balance adjustments, ban/unban, and full balance ledger.

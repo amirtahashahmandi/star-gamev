@@ -691,6 +691,12 @@ small.m{color:var(--mut)}
     </div>
 
     <div class="card">
+      <h3>💎 واریزهای انجام‌شده به ربات</h3>
+      <small class="m" style="display:block;margin-bottom:8px">لیست تمام واریزهای تاییدشده کاربران به همراه آیدی واریزکننده و مبلغ TON</small>
+      <div id="adeposits" style="max-height:260px;overflow-y:auto"></div>
+    </div>
+
+    <div class="card">
       <h3>💸 درخواست‌های برداشت TON در انتظار تایید</h3>
       <small class="m" style="display:block;margin-bottom:8px">هشدار ضدتقلب به صورت خودکار گردش بازی، واریزها و شارژهای دستی کاربر را بررسی می‌کند.</small>
       <div id="awithdrawals"></div>
@@ -1447,6 +1453,17 @@ async function loadAdmin() {
     </div>
   `).join('') || '<small class="m">ماموریتی وجود ندارد</small>';
 
+  const deps = d.deposits || [];
+  $('adeposits').innerHTML = deps.map((dep, i) => `
+    <div class="pl" style="cursor:pointer" onclick="showAdminUser('${dep.uid}')">
+      <div>
+        <div><b>${dep.name || dep.uid}</b> ${dep.username ? `<small class="m">@${dep.username}</small>` : ''}</div>
+        <small class="m">آیدی واریزکننده: <b class="num-cyan">${dep.uid}</b> • ${fmtTime(dep.at)}${dep.txHash ? ` • TX: <span>${String(dep.txHash).slice(0, 10)}...</span>` : ''}</small>
+      </div>
+      <span>💎 <b class="${numColorClass(i)}">+${fmt(dep.amount)} TON</b></span>
+    </div>
+  `).join('') || '<small class="m">هنوز واریزی ثبت نشده است</small>';
+
   const pending = (d.withdrawals || []).filter(w => w.status === 'pending');
   $('awithdrawals').innerHTML = pending.map(w => {
     const reasons = (w.riskReasons && w.riskReasons.length) ? w.riskReasons : [];
@@ -1577,6 +1594,22 @@ function showAdminUser(uid) {
         <button class="r" style="padding:7px" onclick="adminAdjustSelectedUser('${u.id}',-1)">- کم کن</button>
         <button class="${u.banned ? 'g' : 'r'}" style="padding:7px" onclick="$('aid').value='${u.id}';adminBan(${!u.banned})">${u.banned ? 'آزادسازی' : 'بن کردن'}</button>
       </div>
+    </div>
+
+    <div class="dual-box" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700">🤝 زیرمجموعه‌های این کاربر (<span class="num-pink">${(u.referrals || []).length}</span>)</div>
+        <small class="m">درآمد رفرال: <b class="num-gold">${fmt(u.refEarned || 0)} TON</b></small>
+      </div>
+      ${(u.referrals && u.referrals.length)
+        ? u.referrals.map((r, idx) => `<div class="pl" style="cursor:pointer" onclick="showAdminUser('${r.id}')">
+            <div>
+              <div><b class="${numColorClass(idx)}">${idx + 1}.</b> <b>${r.name}</b> ${r.banned ? '🚫' : ''}</div>
+              <small class="m">آیدی: <b class="num-cyan">${r.id}</b>${r.username ? ` • @${r.username}` : ''} • گردش: <b class="num-lav">${fmt(r.wagered || 0)} TON</b></small>
+            </div>
+            <span>💎 <b class="num-pink">${fmt(r.coins || 0)} TON</b></span>
+          </div>`).join('')
+        : '<small class="m">این کاربر هنوز زیرمجموعه‌ای ندارد</small>'}
     </div>
 
     ${flagsHtml}
