@@ -1,5 +1,1 @@
-{
-  "name": "tonia-game",
-  "private": true,
-  "version": "2.9.5"
-}
+{ "name": "star-game", "private": true, "version": "1.0.0" }

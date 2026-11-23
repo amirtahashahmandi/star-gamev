@@ -1,4 +1,4 @@
-name = "tonia-game"
+name = "star-game"
 main = "src/worker.js"
 compatibility_date = "2025-01-01"
 keep_vars = true
