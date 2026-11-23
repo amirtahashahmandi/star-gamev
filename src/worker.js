@@ -1,4 +1,4 @@
-// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.5 + Custom Stake Arena)
+// Tonia on Cloudflare Workers + Durable Object (100% TON Economy v2.6 + Support Photo Forwarding)
 const DAY = 24 * 3600 * 1000;
 const GROWTH = 0.09, BET_MS = 7000, CRASHED_MS = 4000;
 const LEVELS = [0, 0.5, 1.5, 4, 9, 18, 35, 70, 140, 300];
@@ -796,21 +796,23 @@ export class Game {
     const up = await req.json().catch(() => ({}));
     const m = up.message;
 
-    if (m && m.text) {
-      const id = String(m.from.id), [cmd, ...a] = m.text.split(/\s+/), origin = url.origin;
+    if (m && (m.text || m.photo)) {
+      const id = String(m.from.id), origin = url.origin;
+      const rawText = String(m.text || m.caption || '').trim();
+      const [cmd, ...a] = rawText ? rawText.split(/\s+/) : [''];
       const isAdminMsg = id === String(this.env.ADMIN_ID);
 
-      if (cmd === '/start') {
+      if (m.text && cmd === '/start') {
         const startParam = a[0] || '';
         this.getUser(m.from, startParam);
         const appUrl = startParam ? `${origin}/?ref=${encodeURIComponent(startParam)}` : origin;
         await this.tg('sendMessage', {
           chat_id: id,
-          text: '💎 به Tonia خوش آمدید!\nبرای ورود به بازی، دعوت دوستان و واریز TON روی دکمه زیر بزنید:\n\n💬 برای ارسال پیام به پشتیبانی، کافیست همین‌جا در ربات پیام خود را بنویسید تا مستقیم برای ادمین ارسال شود.',
+          text: '💎 به Tonia خوش آمدید!\nبرای ورود به بازی، دعوت دوستان و واریز TON روی دکمه زیر بزنید:\n\n💬 برای ارسال پیام یا عکس به پشتیبانی، کافیست همین‌جا متن یا عکس خود را بفرستید تا مستقیم برای ادمین ارسال شود.',
           reply_markup: { inline_keyboard: [[{ text: '🚀 ورود به Tonia', web_app: { url: appUrl } }]] }
         });
       } else if (isAdminMsg) {
-        if (cmd === '/give' || cmd === '/take') {
+        if (m.text && (cmd === '/give' || cmd === '/take')) {
           const t = this.findUserByQuery(a[0]), n = Number(a[1]);
           if (t && isFinite(n) && n > 0) {
             const delta = cmd === '/give' ? r4(n) : r4(-n);
@@ -818,15 +820,15 @@ export class Game {
             this.touch(t);
             await this.tg('sendMessage', { chat_id: id, text: `${t.name}: ${fmtTon(t.coins)} TON` });
           }
-        } else if (cmd === '/next') {
+        } else if (m.text && cmd === '/next') {
           this.meta.settings.queue.push(...a.map(Number).filter(n => n >= 1).map(n => Math.round(n * 100) / 100));
           this.saveMeta();
           await this.tg('sendMessage', { chat_id: id, text: 'صف: ' + this.meta.settings.queue.join(', ') });
-        } else if (cmd === '/clearnext') {
+        } else if (m.text && cmd === '/clearnext') {
           this.meta.settings.queue = [];
           this.saveMeta();
           await this.tg('sendMessage', { chat_id: id, text: 'صف خالی شد.' });
-        } else if (cmd === '/reply') {
+        } else if (m.text && cmd === '/reply') {
           const targetId = String(a[0] || '').trim();
           const replyText = m.text.replace(/^\/reply\s+\S+\s*/i, '').trim();
           if (targetId && replyText) {
@@ -839,13 +841,22 @@ export class Game {
             await this.tg('sendMessage', { chat_id: id, text: 'فرمت صحیح: /reply USER_ID متن پاسخ' });
           }
         } else if (m.reply_to_message) {
-          const origText = m.reply_to_message.text || '';
+          const origText = m.reply_to_message.text || m.reply_to_message.caption || '';
           const match = origText.match(/آیدی:\s*(\d+)/) || origText.match(/\((\d+)\)/);
           if (match && match[1]) {
-            await this.tg('sendMessage', {
-              chat_id: match[1],
-              text: `💬 پاسخ پشتیبانی Tonia:\n${m.text}`
-            });
+            if (m.photo && m.photo.length) {
+              const bestPhoto = m.photo[m.photo.length - 1];
+              await this.tg('sendPhoto', {
+                chat_id: match[1],
+                photo: bestPhoto.file_id,
+                caption: m.caption ? `💬 پاسخ پشتیبانی Tonia:\n${m.caption}` : '💬 پاسخ پشتیبانی Tonia'
+              });
+            } else if (m.text) {
+              await this.tg('sendMessage', {
+                chat_id: match[1],
+                text: `💬 پاسخ پشتیبانی Tonia:\n${m.text}`
+              });
+            }
             await this.tg('sendMessage', { chat_id: id, text: `✅ پاسخ برای کاربر ${match[1]} ارسال شد.` });
           }
         }
@@ -853,14 +864,29 @@ export class Game {
         const u = this.getUser(m.from);
         if (this.env.ADMIN_ID) {
           const unameStr = u.username ? `@${u.username}` : 'ندارد';
-          await this.tg('sendMessage', {
-            chat_id: String(this.env.ADMIN_ID),
-            text: `📩 پیام جدید پشتیبانی:\nنام: ${u.name}\nیوزرنیم: ${unameStr}\nآیدی: ${u.id}\nموجودی: ${fmtTon(u.coins)} TON\n\nمتن پیام:\n${m.text}\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`
-          });
+          const infoHeader = `📩 پیام جدید پشتیبانی:\nنام: ${u.name}\nیوزرنیم: ${unameStr}\nآیدی: ${u.id}\nموجودی: ${fmtTon(u.coins)} TON`;
+          if (m.photo && m.photo.length) {
+            const bestPhoto = m.photo[m.photo.length - 1];
+            const cap = m.caption
+              ? `${infoHeader}\n\nتوضیح عکس:\n${m.caption}\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`
+              : `${infoHeader}\n\n📷 عکس ارسال شده توسط کاربر\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`;
+            await this.tg('sendPhoto', {
+              chat_id: String(this.env.ADMIN_ID),
+              photo: bestPhoto.file_id,
+              caption: cap
+            });
+          } else {
+            await this.tg('sendMessage', {
+              chat_id: String(this.env.ADMIN_ID),
+              text: `${infoHeader}\n\nمتن پیام:\n${m.text}\n\n💡 برای پاسخ دادن، روی همین پیام Reply کنید یا بنویسید:\n/reply ${u.id} متن شما`
+            });
+          }
         }
         await this.tg('sendMessage', {
           chat_id: id,
-          text: '✅ پیام شما به پشتیبانی ارسال شد. به زودی پاسخ داده می‌شود.'
+          text: m.photo && m.photo.length
+            ? '✅ عکس و پیام شما به پشتیبانی ارسال شد. به زودی پاسخ داده می‌شود.'
+            : '✅ پیام شما به پشتیبانی ارسال شد. به زودی پاسخ داده می‌شود.'
         });
       }
     }
