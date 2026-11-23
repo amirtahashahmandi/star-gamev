@@ -86,6 +86,8 @@ const JSONH = { 'content-type': 'application/json' };
 const json = (code, obj) => new Response(JSON.stringify(obj), { status: code, headers: JSONH });
 
 async function validateInitData(init, token) {
+  token = String(token || '').trim();
+  init = String(init || '').trim();
   if (!token || !init) return null;
   const p = new URLSearchParams(init);
   const hash = p.get('hash'); p.delete('hash');
@@ -587,9 +589,10 @@ export class Game {
 
   addXp(u, a) { u.xp += Math.max(1, Math.floor(Number(a || 1) * 20)); }
   async tg(method, body) {
-    if (!this.env.BOT_TOKEN) return null;
+    const botTok = String(this.env.BOT_TOKEN || '').trim();
+    if (!botTok) return null;
     try {
-      const r = await fetch(`https://api.telegram.org/bot${this.env.BOT_TOKEN}/${method}`, {
+      const r = await fetch(`https://api.telegram.org/bot${botTok}/${method}`, {
         method: 'POST', headers: JSONH, body: JSON.stringify(body)
       });
       return (await r.json()).result;
@@ -922,11 +925,16 @@ export class Game {
 
   async api(req, url) {
     const initStr = req.headers.get('x-init-data') || '';
+    const hasToken = !!String(this.env.BOT_TOKEN || '').trim();
     let tgUser = await validateInitData(initStr, this.env.BOT_TOKEN);
     if (!tgUser && this.env.DEV === '1' && req.headers.get('x-dev-user')) {
       tgUser = { id: req.headers.get('x-dev-user'), first_name: 'Dev ' + req.headers.get('x-dev-user') };
     }
-    if (!tgUser) return json(401, { error: 'unauthorized' });
+    if (!tgUser) {
+      return json(401, {
+        error: !hasToken ? 'BOT_TOKEN در تنظیمات کلودفلر ثبت نشده است' : (!initStr ? 'اطلاعات ورود تلگرام (initData) ارسال نشده است' : 'احراز هویت ناموفق (BOT_TOKEN یا initData نامعتبر است)')
+      });
+    }
 
     let startParam = req.headers.get('x-ref') || '';
     if (!startParam && initStr) {
