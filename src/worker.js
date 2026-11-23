@@ -1327,6 +1327,7 @@ export class Game {
           missionsConfig: this.meta.missionsConfig || [],
           settings: { ...S, startCoins: 0 }
         });
+      }
 
       case 'POST /api/admin/broadcast': {
         const text = String(body.text || '').trim();
