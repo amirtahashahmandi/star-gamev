@@ -385,7 +385,7 @@ small.m{color:var(--mut)}
       <div class="bar"><i id="xp"></i></div>
     </div>
     <button class="ghost" style="padding:8px 10px;border-radius:99px" id="sndBtn" onclick="toggleSound()">🔊</button>
-    <div class="coins">💎 <span id="coins" class="num-pink">0</span> TON</div>
+    <div class="coins" dir="ltr">💎 <span id="coins" class="num-pink">0</span> TON</div>
   </div>
 
   <div class="page on" id="p-games">
@@ -521,7 +521,7 @@ small.m{color:var(--mut)}
 
     <div class="card">
       <h3>💎 کیف TON</h3>
-      <div style="font-size:28px;font-weight:900;text-align:center;margin-bottom:10px">
+      <div style="font-size:28px;font-weight:900;text-align:center;margin-bottom:10px" dir="ltr">
         💎 <span id="w2" class="num-pink">0</span> <span class="num-cyan">TON</span>
       </div>
 
@@ -1745,11 +1745,12 @@ async function poll() {
   } catch {}
 }
 api('me').then(d => {
-  botUsername = cleanBotName(d.botUsername || '');
+  if (d && d.user) setUser(d.user);
+  botUsername = cleanBotName(d.botUsername || (d.user && d.user.botUsername) || '');
   $('botun').textContent = '@' + (botUsername || '—');
   updateRefLink();
   initTonConnect();
-});
+}).catch(() => {});
 poll();
 setInterval(poll, 450);
 </script>
